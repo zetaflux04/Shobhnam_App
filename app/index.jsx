@@ -3,13 +3,13 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ImageBackground,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 import { colors, textVariants } from '../styles/theme';

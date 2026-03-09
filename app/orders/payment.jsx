@@ -5,11 +5,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 import { useOrder } from '../../context/OrderContext';

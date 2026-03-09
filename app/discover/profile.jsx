@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  SafeAreaView,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 import api from '../../lib/api';

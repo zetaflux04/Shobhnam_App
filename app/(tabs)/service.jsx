@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
   ImageBackground,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScaledSheet, moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
@@ -54,10 +54,14 @@ const serviceCards = [
   },
 ];
 
+const formatCurrency = (value) => `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+
 export default function ServiceScreen() {
   const router = useRouter();
   const [featuredArtists, setFeaturedArtists] = useState([]);
   const [loadingArtists, setLoadingArtists] = useState(true);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   useEffect(() => {
     const fetchArtists = async () => {
@@ -80,6 +84,50 @@ export default function ServiceScreen() {
     };
     fetchArtists();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      const fetchOrders = async () => {
+        setLoadingOrders(true);
+        try {
+          const [bookingsRes, ordersRes] = await Promise.all([
+            api.get('/bookings/user').catch(() => ({ data: { data: [] } })),
+            api.get('/orders/user').catch(() => ({ data: { data: [] } })),
+          ]);
+          if (cancelled) return;
+          const bookings = bookingsRes.data?.data ?? [];
+          const orders = (ordersRes.data?.data ?? []).filter((o) => o.paymentStatus === 'PAID');
+          const merged = [
+            ...bookings.map((b) => ({
+              id: b._id,
+              type: 'booking',
+              title: b.eventDetails?.type ?? 'Event',
+              artist: b.artist?.name ?? 'Artist',
+              date: b.eventDetails?.date ? new Date(b.eventDetails.date) : new Date(0),
+              amount: b.pricing?.agreedPrice ?? 0,
+            })),
+            ...orders.map((o) => ({
+              id: o._id,
+              type: 'order',
+              title: o.items?.[0]?.serviceName ?? 'Order',
+              artist: o.items?.[0]?.packageTitle ?? '',
+              date: o.createdAt ? new Date(o.createdAt) : new Date(0),
+              amount: o.grandTotal ?? 0,
+            })),
+          ];
+          merged.sort((a, b) => b.date - a.date);
+          setRecentOrders(merged.slice(0, 5));
+        } catch {
+          if (!cancelled) setRecentOrders([]);
+        } finally {
+          if (!cancelled) setLoadingOrders(false);
+        }
+      };
+      fetchOrders();
+      return () => { cancelled = true; };
+    }, [])
+  );
 
   const serviceRoutes = {
     ramleela: '/ramleela',
@@ -202,25 +250,43 @@ export default function ServiceScreen() {
             <Ionicons name="chevron-forward" size={moderateScale(16)} color="#20222C" />
           </TouchableOpacity>
         </View>
-        {loadingArtists ? (
+        {loadingOrders ? (
           <View style={styles.artistsLoading}>
             <ActivityIndicator size="small" color="#5A0C0C" />
           </View>
-        ) : (
+        ) : recentOrders.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowCards}>
-            {featuredArtists.slice(0, 3).map((artist, idx) => (
+            {recentOrders.map((order, idx) => (
               <TouchableOpacity
-                key={`${artist.id ?? artist.name}-recent-${idx}`}
-                style={styles.artistCard}
+                key={`${order.id}-${idx}`}
+                style={styles.orderCard}
                 activeOpacity={0.9}
-                onPress={() => router.push({ pathname: '/discover/profile', params: { artistId: artist.id } })}
+                onPress={() => router.push('/(tabs)/orders')}
               >
-                <Image source={artist.image} style={styles.artistImage} />
-                <Text style={[textVariants.body1, styles.artistName]}>{artist.name}</Text>
-                <Text style={[textVariants.body3, styles.artistTag]}>{artist.tag}</Text>
+                <View style={styles.orderCardContent}>
+                  <Text style={[textVariants.body1, styles.orderCardTitle]} numberOfLines={1}>
+                    {order.title}
+                  </Text>
+                  {order.artist ? (
+                    <Text style={[textVariants.body3, styles.orderCardArtist]} numberOfLines={1}>
+                      {order.artist}
+                    </Text>
+                  ) : null}
+                  <Text style={[textVariants.body4, styles.orderCardDate]}>
+                    {order.date.getTime() > 0 ? order.date.toLocaleDateString() : '—'}
+                  </Text>
+                  <Text style={[textVariants.heading5, styles.orderCardAmount]}>{formatCurrency(order.amount)}</Text>
+                </View>
               </TouchableOpacity>
             ))}
           </ScrollView>
+        ) : (
+          <View style={styles.emptyOrders}>
+            <Text style={[textVariants.body3, styles.emptyOrdersText]}>No recent orders</Text>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/(tabs)/orders')}>
+              <Text style={[textVariants.body4, styles.emptyOrdersLink]}>View orders</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         <View style={styles.footerNoteRow}>
@@ -376,6 +442,42 @@ const styles = ScaledSheet.create({
     color: '#6A6E75',
     paddingHorizontal: scale(10),
     paddingBottom: verticalScale(10),
+  },
+  orderCard: {
+    width: scale(140),
+    backgroundColor: colors.background.surface,
+    borderRadius: moderateScale(12),
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ECE8E8',
+    padding: scale(10),
+  },
+  orderCardContent: {
+    gap: verticalScale(4),
+  },
+  orderCardTitle: {
+    color: colors.text.primary,
+  },
+  orderCardArtist: {
+    color: '#6A6E75',
+  },
+  orderCardDate: {
+    color: '#9EA3A9',
+  },
+  orderCardAmount: {
+    color: '#5A0C0C',
+    marginTop: verticalScale(4),
+  },
+  emptyOrders: {
+    paddingVertical: verticalScale(16),
+    alignItems: 'center',
+    gap: verticalScale(4),
+  },
+  emptyOrdersText: {
+    color: '#6A6E75',
+  },
+  emptyOrdersLink: {
+    color: '#5A0C0C',
   },
   artistsLoading: {
     height: verticalScale(180),

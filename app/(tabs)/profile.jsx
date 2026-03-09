@@ -1,16 +1,17 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
-  SafeAreaView,
   ScrollView,
   Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 import { useAuth } from '../../context/AuthContext';
@@ -55,37 +56,41 @@ function SettingRow({
 }
 
 export default function ProfileScreen() {
-  const params = useLocalSearchParams();
-  const { user, logout } = useAuth();
-  const initialRole = params.role === 'user' ? 'user' : 'artist';
-  const initialHasOther = params.hasOther === 'true';
+  const router = useRouter();
+  const { user, userType, login, logout } = useAuth();
+  const isArtistAuth = userType === 'artist';
 
   const [darkMode, setDarkMode] = useState(false);
   const [profile, setProfile] = useState({
     name: user?.name ?? '—',
-    role: initialRole,
-    hasOtherProfile: initialHasOther,
+    hasOtherProfile: false,
     rating: 0,
     ordersCompleted: 0,
     totalEarning: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const [userRes, bookingsRes] = await Promise.all([
-          api.get('/users/me'),
-          api.get('/bookings/user').catch(() => ({ data: { data: [] } })),
+        const meEndpoint = isArtistAuth ? '/artists/me' : '/users/me';
+        const bookingsEndpoint = isArtistAuth ? '/bookings/artist' : '/bookings/user';
+        const [meRes, bookingsRes, dualRes] = await Promise.all([
+          api.get(meEndpoint),
+          api.get(bookingsEndpoint).catch(() => ({ data: { data: [] } })),
+          api.get('/auth/has-dual-profile').catch(() => ({ data: { data: { hasDualProfile: false } } })),
         ]);
-        const u = userRes.data?.data;
+        const u = meRes.data?.data;
         const bookings = Array.isArray(bookingsRes.data?.data) ? bookingsRes.data.data : [];
         const completed = bookings.filter((b) => b.status === 'COMPLETED');
         const totalEarning = completed.reduce((sum, b) => sum + (b.pricing?.agreedPrice ?? 0), 0);
+        const hasDualProfile = dualRes.data?.data?.hasDualProfile ?? false;
 
         setProfile((prev) => ({
           ...prev,
           name: u?.name ?? user?.name ?? prev.name,
+          hasOtherProfile: hasDualProfile,
           ordersCompleted: bookings.length,
           totalEarning,
         }));
@@ -96,9 +101,9 @@ export default function ProfileScreen() {
       }
     };
     fetchProfile();
-  }, [user?.name]);
+  }, [user?.name, isArtistAuth]);
 
-  const isArtist = profile.role === 'artist';
+  const isArtist = isArtistAuth;
   const isSwitchAction = profile.hasOtherProfile;
 
   const ctaLabel = useMemo(() => {
@@ -164,16 +169,31 @@ export default function ProfileScreen() {
     { icon: 'refresh-circle-outline', label: 'Refund & cancellation policy' },
   ];
 
-  const onPressCta = () => {
-    setProfile((prev) => {
-      const nextRole = prev.role === 'artist' ? 'user' : 'artist';
-      return {
-        ...prev,
-        role: nextRole,
-        hasOtherProfile: prev.hasOtherProfile || prev.role !== nextRole,
-      };
-    });
-  };
+  const onPressCta = useCallback(async () => {
+    if (profile.hasOtherProfile) {
+      setSwitching(true);
+      try {
+        const res = await api.post('/auth/switch-profile');
+        const data = res.data?.data;
+        if (data?.user && data?.accessToken) {
+          await login(data.user, data.accessToken, 'user');
+        } else if (data?.artist && data?.accessToken) {
+          await login(data.artist, data.accessToken, 'artist');
+        }
+      } catch (err) {
+        const msg = err.response?.data?.message ?? err.message ?? 'Failed to switch profile';
+        Alert.alert('Error', msg);
+      } finally {
+        setSwitching(false);
+      }
+    } else {
+      if (isArtist) {
+        router.push('/login/name');
+      } else {
+        router.push('/artist/onboarding');
+      }
+    }
+  }, [profile.hasOtherProfile, isArtist, login, router]);
 
   if (loading) {
     return (
@@ -213,14 +233,21 @@ export default function ProfileScreen() {
                 !isArtist && isSwitchAction ? styles.ctaOutline : undefined,
               ]}
               onPress={onPressCta}
+              disabled={switching}
             >
-              <Ionicons
-                name={ctaIcon}
-                size={moderateScale(16)}
-                color={ctaTextColor}
-                style={styles.ctaIcon}
-              />
-              <Text style={[textVariants.button2, { color: ctaTextColor }]}>{ctaLabel}</Text>
+              {switching ? (
+                <ActivityIndicator size="small" color={ctaTextColor} />
+              ) : (
+                <>
+                  <Ionicons
+                    name={ctaIcon}
+                    size={moderateScale(16)}
+                    color={ctaTextColor}
+                    style={styles.ctaIcon}
+                  />
+                  <Text style={[textVariants.button2, { color: ctaTextColor }]}>{ctaLabel}</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>

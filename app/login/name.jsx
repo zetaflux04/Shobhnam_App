@@ -2,12 +2,12 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import {
   Image,
-  SafeAreaView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ScaledSheet, scale, verticalScale, moderateScale } from 'react-native-size-matters';
 

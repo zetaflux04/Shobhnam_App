@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { SafeAreaView, ScrollView, Text, TouchableOpacity, View, Pressable, StyleSheet } from 'react-native';
+import { ScrollView, Text, TouchableOpacity, View, Pressable, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 import { useOrder } from '../../context/OrderContext';
