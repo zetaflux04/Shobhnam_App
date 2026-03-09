@@ -1,50 +1,72 @@
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import * as ImagePicker from "expo-image-picker";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
   Modal,
-  Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { ScaledSheet, scale, verticalScale, moderateScale } from 'react-native-size-matters';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  ScaledSheet,
+  scale,
+  verticalScale,
+  moderateScale,
+} from "react-native-size-matters";
 
-import api from '../../lib/api';
-import { colors, textVariants } from '../../styles/theme';
+import api, { getAuthToken } from "../../lib/api";
+import { API_BASE_URL, getNetworkErrorMessage } from "../../config/api";
+import { colors, textVariants } from "../../styles/theme";
 
-const genderOptions = ['Male', 'Female', 'Other'];
-const expertiseOptions = ['Ramleela artist', 'Classical singer', 'Instrumentalist'];
-const ramleelaCharacters = ['Ram', 'Sita', 'Hanuman', 'Laxman'];
-const experienceOptions = ['1 year', '3 years', '5 years', '10 years', '15 years'];
+const genderOptions = ["Male", "Female", "Other"];
+const expertiseOptions = [
+  "Ramleela artist",
+  "Classical singer",
+  "Instrumentalist",
+];
+const ramleelaCharacters = ["Ram", "Sita", "Hanuman", "Laxman"];
+const experienceOptions = [
+  "1 year",
+  "3 years",
+  "5 years",
+  "10 years",
+  "15 years",
+];
 
 // Map app expertise to backend category
 const expertiseToCategory = {
-  'Ramleela artist': 'Ramleela',
-  'Classical singer': 'Other',
-  Instrumentalist: 'Other',
+  "Ramleela artist": "Ramleela",
+  "Classical singer": "Other",
+  Instrumentalist: "Other",
 };
 
 export default function ArtistDetailsScreen() {
   const params = useLocalSearchParams();
 
-  const [fullName, setFullName] = useState(params.name ?? '');
-  const [gender, setGender] = useState('');
-  const [expertise, setExpertise] = useState('');
-  const [character, setCharacter] = useState('');
-  const [experience, setExperience] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState(null);
-  const [aadharCard, setAadharCard] = useState(null);
-  const [serviceLocation, setServiceLocation] = useState(params.serviceLocation ?? '');
-  const [youtubeLink, setYoutubeLink] = useState('');
+  const [fullName, setFullName] = useState(params.name ?? "");
+  const [gender, setGender] = useState("");
+  const [expertise, setExpertise] = useState("");
+  const [character, setCharacter] = useState("");
+  const [experience, setExperience] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState(null); // { asset, url }
+  const [aadharCard, setAadharCard] = useState(null); // { asset, url }
+  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
+  const [uploadingAadharCard, setUploadingAadharCard] = useState(false);
+  const [profilePhotoError, setProfilePhotoError] = useState(null);
+  const [aadharCardError, setAadharCardError] = useState(null);
+  const [serviceLocation, setServiceLocation] = useState(
+    params.serviceLocation ?? "",
+  );
+  const [youtubeLink, setYoutubeLink] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -57,7 +79,7 @@ export default function ArtistDetailsScreen() {
     }
   }, [params.serviceLocation, serviceLocation]);
 
-  const requireCharacter = expertise.toLowerCase().includes('ramleela');
+  const requireCharacter = expertise.toLowerCase().includes("ramleela");
 
   const canSubmit = useMemo(() => {
     return (
@@ -66,52 +88,149 @@ export default function ArtistDetailsScreen() {
       expertise &&
       experience &&
       serviceLocation &&
-      !!profilePhoto &&
-      !!aadharCard &&
+      profilePhoto?.url &&
+      aadharCard?.url &&
       (!requireCharacter || character) &&
       agreed
     );
-  }, [agreed, character, experience, expertise, fullName, gender, profilePhoto, aadharCard, requireCharacter, serviceLocation]);
+  }, [
+    agreed,
+    character,
+    experience,
+    expertise,
+    fullName,
+    gender,
+    profilePhoto,
+    aadharCard,
+    requireCharacter,
+    serviceLocation,
+  ]);
 
   const openPicker = (key) => setPickerVisible(key);
 
   const handlePickerSelect = (key, value) => {
     setPickerVisible(null);
-    if (key === 'gender') setGender(value);
-    if (key === 'expertise') {
+    if (key === "gender") setGender(value);
+    if (key === "expertise") {
       setExpertise(value);
-      if (!value.toLowerCase().includes('ramleela')) {
-        setCharacter('');
+      if (!value.toLowerCase().includes("ramleela")) {
+        setCharacter("");
       }
     }
-    if (key === 'character') setCharacter(value);
-    if (key === 'experience') setExperience(value);
+    if (key === "character") setCharacter(value);
+    if (key === "experience") setExperience(value);
   };
+
+  const uploadFileWithFileSystem = async (fileUri, fieldName, endpoint) => {
+    const token = await getAuthToken();
+    const url = `${API_BASE_URL}/api/v1${endpoint}`;
+    let result;
+    try {
+      result = await FileSystem.uploadAsync(url, fileUri, {
+        httpMethod: "POST",
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+    } catch (err) {
+      err.code = err.code ?? "ERR_NETWORK";
+      throw err;
+    }
+    let data;
+    try {
+      data = JSON.parse(result.body);
+    } catch {
+      throw new Error("Invalid response from server");
+    }
+    if (result.status >= 200 && result.status < 300) {
+      return data?.data?.fileSavedUrl;
+    }
+    throw new Error(data?.message ?? "Upload failed");
+  };
+
+  const isNetworkError = (err) =>
+    !err.response &&
+    (err.message === "Network Error" ||
+      err.code === "ERR_NETWORK" ||
+      err.message?.includes("Network request failed"));
 
   const pickProfilePhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'Please allow access to your photo library.');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        "Please allow access to your photo library.",
+      );
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.6,
     });
     if (!result.canceled && result.assets?.[0]) {
-      setProfilePhoto(result.assets[0]);
+      const asset = result.assets[0];
+      setProfilePhoto({ asset });
+      setProfilePhotoError(null);
+      setUploadingProfilePhoto(true);
+      try {
+        const url = await uploadFileWithFileSystem(
+          asset.uri,
+          "profilePhoto",
+          "/admin/upload-artist-profile-photo"
+        );
+        if (url) {
+          setProfilePhoto((prev) => (prev ? { ...prev, url } : { asset, url }));
+        }
+      } catch (err) {
+        setProfilePhotoError(err);
+        setProfilePhoto(null);
+        if (__DEV__) {
+          console.warn("[ArtistDetails] Profile photo upload error:", err?.message, err);
+        }
+        const msg = isNetworkError(err)
+          ? getNetworkErrorMessage()
+          : err.message ?? "Failed to upload photo. Try again.";
+        Alert.alert("Upload failed", msg);
+      } finally {
+        setUploadingProfilePhoto(false);
+      }
     }
   };
 
   const pickAadharCard = async () => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: ['image/*', 'application/pdf'],
+      type: ["image/*", "application/pdf"],
       copyToCacheDirectory: true,
     });
     if (!result.canceled && result.assets?.[0]) {
-      setAadharCard(result.assets[0]);
+      const asset = result.assets[0];
+      setAadharCard({ asset });
+      setAadharCardError(null);
+      setUploadingAadharCard(true);
+      try {
+        const url = await uploadFileWithFileSystem(
+          asset.uri,
+          "aadharCard",
+          "/admin/upload-artist-aadhar"
+        );
+        if (url) {
+          setAadharCard((prev) => (prev ? { ...prev, url } : { asset, url }));
+        }
+      } catch (err) {
+        setAadharCardError(err);
+        setAadharCard(null);
+        if (__DEV__) {
+          console.warn("[ArtistDetails] Aadhar upload error:", err?.message, err);
+        }
+        const msg = isNetworkError(err)
+          ? getNetworkErrorMessage()
+          : err.message ?? "Failed to upload Aadhar card. Try again.";
+        Alert.alert("Upload failed", msg);
+      } finally {
+        setUploadingAadharCard(false);
+      }
     }
   };
 
@@ -120,48 +239,46 @@ export default function ArtistDetailsScreen() {
 
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('fullName', fullName.trim());
-      formData.append('gender', gender);
-      formData.append('expertise', expertise);
-      formData.append('experience', experience);
-      formData.append('serviceLocation', serviceLocation);
-      formData.append('agreedToTerms', agreed ? 'true' : 'false');
-      if (character) formData.append('ramleelaCharacter', character);
-      if (youtubeLink.trim()) formData.append('youtubeLink', youtubeLink.trim());
+      await api.get("/health", { timeout: 10000 });
 
-      const category = expertiseToCategory[expertise] || 'Other';
-      formData.append('category', category);
+      const payload = {
+        fullName: fullName.trim(),
+        gender,
+        expertise,
+        experience,
+        serviceLocation,
+        agreedToTerms: agreed ? "true" : "false",
+        category: expertiseToCategory[expertise] || "Other",
+        profilePhoto: profilePhoto?.url,
+        aadharCard: aadharCard?.url,
+      };
+      if (character) payload.ramleelaCharacter = character;
+      if (youtubeLink.trim()) payload.youtubeLink = youtubeLink.trim();
 
-      if (profilePhoto?.uri) {
-        const uri = profilePhoto.uri;
-        const name = profilePhoto.fileName || `profile-${Date.now()}.jpg`;
-        const type = profilePhoto.mimeType || 'image/jpeg';
-        formData.append('profilePhoto', {
-          uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-          name,
-          type,
-        });
-      }
-      if (aadharCard?.uri) {
-        const uri = aadharCard.uri;
-        const name = aadharCard.name || `aadhar-${Date.now()}.pdf`;
-        const type = aadharCard.mimeType || 'application/pdf';
-        formData.append('aadharCard', {
-          uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-          name,
-          type,
-        });
-      }
-
-      await api.patch('/artists/me', formData, { timeout: 30000 });
-      router.push('/artist/success');
+      await api.patch("/artists/me", payload, { timeout: 30000 });
+      router.push("/artist/success");
     } catch (err) {
-      const isNetworkError = !err.response && (err.message === 'Network Error' || err.code === 'ERR_NETWORK');
-      const msg = isNetworkError
-        ? "Cannot reach server. Ensure the backend is running (npm run dev in Shobhnam_Backend). On a physical device, set EXPO_PUBLIC_API_URL in .env to your computer's IP (e.g. http://192.168.1.x:5000)."
-        : (err.response?.data?.message ?? err.message ?? 'Failed to submit profile');
-      Alert.alert('Error', msg);
+      // Debug logging for network issues
+      if (!err.response) {
+        console.warn("[ArtistDetails] Network/upload error:", {
+          code: err.code,
+          message: err.message,
+          cause: err.cause?.message,
+        });
+      }
+      const isTimeout =
+        err.code === "ECONNABORTED" || err.code === "ETIMEDOUT";
+      const isNetworkError =
+        !err.response &&
+        (err.message === "Network Error" || err.code === "ERR_NETWORK");
+      const msg = isTimeout
+        ? "Request timed out. Your connection may be slow — try Wi-Fi and try again."
+        : isNetworkError
+          ? getNetworkErrorMessage()
+          : (err.response?.data?.message ??
+            err.message ??
+            "Failed to submit profile");
+      Alert.alert("Error", msg);
     } finally {
       setLoading(false);
     }
@@ -169,8 +286,13 @@ export default function ArtistDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={[textVariants.heading1, styles.title]}>Join as Artist</Text>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[textVariants.heading1, styles.title]}>
+          Join as Artist
+        </Text>
         <Text style={[textVariants.body1, styles.subtitle]}>
           Help us know you better by entering your registration details.
         </Text>
@@ -187,14 +309,14 @@ export default function ArtistDetailsScreen() {
           <DropdownField
             label="Select your gender"
             value={gender}
-            onPress={() => openPicker('gender')}
+            onPress={() => openPicker("gender")}
             placeholder="Select your gender"
           />
 
           <DropdownField
             label="Select your experties"
             value={expertise}
-            onPress={() => openPicker('expertise')}
+            onPress={() => openPicker("expertise")}
             placeholder="Select your experties"
           />
 
@@ -202,7 +324,7 @@ export default function ArtistDetailsScreen() {
             <DropdownField
               label="Select your ramleela character"
               value={character}
-              onPress={() => openPicker('character')}
+              onPress={() => openPicker("character")}
               placeholder="Select your ramleela character"
             />
           ) : null}
@@ -210,25 +332,31 @@ export default function ArtistDetailsScreen() {
           <DropdownField
             label="Select your experience"
             value={experience}
-            onPress={() => openPicker('experience')}
+            onPress={() => openPicker("experience")}
             placeholder="Select your experience"
           />
 
           <UploadField
             label="Upload your photo"
-            uploaded={!!profilePhoto}
-            displayName={profilePhoto?.fileName}
+            uploaded={!!profilePhoto?.url}
+            displayName={profilePhoto?.asset?.fileName}
             onPress={pickProfilePhoto}
+            loading={uploadingProfilePhoto}
+            error={!!profilePhotoError}
           />
           <UploadField
             label="Upload your aadhar card"
-            uploaded={!!aadharCard}
-            displayName={aadharCard?.name}
+            uploaded={!!aadharCard?.url}
+            displayName={aadharCard?.asset?.name}
             onPress={pickAadharCard}
+            loading={uploadingAadharCard}
+            error={!!aadharCardError}
           />
 
           <UploadField
-            label={serviceLocation ? serviceLocation : 'Enter your service location'}
+            label={
+              serviceLocation ? serviceLocation : "Enter your service location"
+            }
             uploaded={!!serviceLocation}
             onPress={() => setLocationSheet(true)}
             icon="location-outline"
@@ -242,9 +370,19 @@ export default function ArtistDetailsScreen() {
             onChangeText={setYoutubeLink}
           />
 
-          <TouchableOpacity style={styles.checkboxRow} onPress={() => setAgreed((prev) => !prev)} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.checkboxRow}
+            onPress={() => setAgreed((prev) => !prev)}
+            activeOpacity={0.85}
+          >
             <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
-              {agreed ? <Ionicons name="checkmark" size={moderateScale(14)} color={colors.text.inverse} /> : null}
+              {agreed ? (
+                <Ionicons
+                  name="checkmark"
+                  size={moderateScale(14)}
+                  color={colors.text.inverse}
+                />
+              ) : null}
             </View>
             <Text style={[textVariants.body2, styles.checkboxText]}>
               I agree with <Text style={styles.link}>Terms & Conditions</Text>
@@ -254,14 +392,24 @@ export default function ArtistDetailsScreen() {
 
         <TouchableOpacity
           activeOpacity={canSubmit && !loading ? 0.9 : 1}
-          style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled]}
+          style={[
+            styles.button,
+            canSubmit && !loading
+              ? styles.buttonPrimary
+              : styles.buttonDisabled,
+          ]}
           onPress={handleSubmit}
           disabled={!canSubmit || loading}
         >
           {loading ? (
             <ActivityIndicator color={colors.text.inverse} />
           ) : (
-            <Text style={[textVariants.button1, canSubmit ? styles.buttonText : styles.buttonDisabledText]}>
+            <Text
+              style={[
+                textVariants.button1,
+                canSubmit ? styles.buttonText : styles.buttonDisabledText,
+              ]}
+            >
               SUBMIT & CONTINUE
             </Text>
           )}
@@ -269,32 +417,32 @@ export default function ArtistDetailsScreen() {
       </ScrollView>
 
       <PickerModal
-        visible={pickerVisible === 'gender'}
+        visible={pickerVisible === "gender"}
         title="Select gender"
         options={genderOptions}
         onClose={() => setPickerVisible(null)}
-        onSelect={(v) => handlePickerSelect('gender', v)}
+        onSelect={(v) => handlePickerSelect("gender", v)}
       />
       <PickerModal
-        visible={pickerVisible === 'expertise'}
+        visible={pickerVisible === "expertise"}
         title="Select your experties"
         options={expertiseOptions}
         onClose={() => setPickerVisible(null)}
-        onSelect={(v) => handlePickerSelect('expertise', v)}
+        onSelect={(v) => handlePickerSelect("expertise", v)}
       />
       <PickerModal
-        visible={pickerVisible === 'character'}
+        visible={pickerVisible === "character"}
         title="Select your ramleela character"
         options={ramleelaCharacters}
         onClose={() => setPickerVisible(null)}
-        onSelect={(v) => handlePickerSelect('character', v)}
+        onSelect={(v) => handlePickerSelect("character", v)}
       />
       <PickerModal
-        visible={pickerVisible === 'experience'}
+        visible={pickerVisible === "experience"}
         title="Select your experience"
         options={experienceOptions}
         onClose={() => setPickerVisible(null)}
-        onSelect={(v) => handlePickerSelect('experience', v)}
+        onSelect={(v) => handlePickerSelect("experience", v)}
       />
 
       <LocationSheet
@@ -302,11 +450,11 @@ export default function ArtistDetailsScreen() {
         onClose={() => setLocationSheet(false)}
         onAnother={() => {
           setLocationSheet(false);
-          router.push('/artist/location-search');
+          router.push("/artist/location-search");
         }}
         onCurrent={() => {
           setLocationSheet(false);
-          setServiceLocation('Current location');
+          setServiceLocation("Current location");
         }}
       />
     </SafeAreaView>
@@ -318,8 +466,17 @@ export default function ArtistDetailsScreen() {
  */
 function DropdownField({ label, value, onPress, placeholder }) {
   return (
-    <TouchableOpacity style={styles.dropdown} onPress={onPress} activeOpacity={0.9}>
-      <Text style={[textVariants.body2, value ? styles.dropdownValue : styles.placeholder]}>
+    <TouchableOpacity
+      style={styles.dropdown}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
+      <Text
+        style={[
+          textVariants.body2,
+          value ? styles.dropdownValue : styles.placeholder,
+        ]}
+      >
         {value || placeholder}
       </Text>
       <Ionicons name="chevron-down" size={moderateScale(18)} color="#5A0C0C" />
@@ -328,20 +485,52 @@ function DropdownField({ label, value, onPress, placeholder }) {
 }
 
 /**
- * @param {{ label: string; uploaded: boolean; displayName?: string; onPress: () => void; icon?: keyof typeof Ionicons.glyphMap }} props
+ * @param {{ label: string; uploaded: boolean; displayName?: string; onPress: () => void; icon?: keyof typeof Ionicons.glyphMap; loading?: boolean; error?: boolean }} props
  */
-function UploadField({ label, uploaded, displayName, onPress, icon = 'add' }) {
+function UploadField({
+  label,
+  uploaded,
+  displayName,
+  onPress,
+  icon = "add",
+  loading = false,
+  error = false,
+}) {
   return (
-    <TouchableOpacity style={styles.uploadRow} onPress={onPress} activeOpacity={0.9}>
-      <Text style={[textVariants.body2, uploaded ? styles.uploadedText : styles.placeholder]} numberOfLines={1}>
-        {uploaded && displayName ? displayName : label}
+    <TouchableOpacity
+      style={[
+        styles.uploadRow,
+        error && styles.uploadRowError,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.9}
+      disabled={loading}
+    >
+      <Text
+        style={[
+          textVariants.body2,
+          uploaded ? styles.uploadedText : styles.placeholder,
+        ]}
+        numberOfLines={1}
+      >
+        {loading ? "Uploading..." : uploaded && displayName ? displayName : label}
       </Text>
-      <View style={[styles.circle, uploaded ? styles.circleSuccess : styles.circleNeutral]}>
-        <Ionicons
-          name={uploaded ? 'checkmark' : icon}
-          size={moderateScale(uploaded ? 16 : 18)}
-          color={uploaded ? colors.text.inverse : '#5A0C0C'}
-        />
+      <View
+        style={[
+          styles.circle,
+          uploaded ? styles.circleSuccess : styles.circleNeutral,
+          error && styles.circleError,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#5A0C0C" />
+        ) : (
+          <Ionicons
+            name={uploaded ? "checkmark" : icon}
+            size={moderateScale(uploaded ? 16 : 18)}
+            color={uploaded ? colors.text.inverse : error ? "#C62828" : "#5A0C0C"}
+          />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -355,7 +544,9 @@ function PickerModal({ visible, title, options, onSelect, onClose }) {
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
-          <Text style={[textVariants.heading3, styles.modalTitle]}>{title}</Text>
+          <Text style={[textVariants.heading3, styles.modalTitle]}>
+            {title}
+          </Text>
           {options.map((option) => (
             <TouchableOpacity
               key={option}
@@ -363,11 +554,19 @@ function PickerModal({ visible, title, options, onSelect, onClose }) {
               onPress={() => onSelect(option)}
               activeOpacity={0.85}
             >
-              <Text style={[textVariants.body1, styles.modalItemText]}>{option}</Text>
+              <Text style={[textVariants.body1, styles.modalItemText]}>
+                {option}
+              </Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity style={styles.modalClose} onPress={onClose} activeOpacity={0.85}>
-            <Text style={[textVariants.button2, styles.modalCloseText]}>Cancel</Text>
+          <TouchableOpacity
+            style={styles.modalClose}
+            onPress={onClose}
+            activeOpacity={0.85}
+          >
+            <Text style={[textVariants.button2, styles.modalCloseText]}>
+              Cancel
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -382,29 +581,59 @@ function LocationSheet({ visible, onClose, onAnother, onCurrent }) {
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.sheetOverlay}>
-        <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity
+          style={styles.sheetBackdrop}
+          activeOpacity={1}
+          onPress={onClose}
+        />
         <View style={styles.sheetCard}>
-          <TouchableOpacity style={styles.sheetClose} onPress={onClose} activeOpacity={0.85}>
-            <Ionicons name="close" size={moderateScale(16)} color={colors.text.primary} />
+          <TouchableOpacity
+            style={styles.sheetClose}
+            onPress={onClose}
+            activeOpacity={0.85}
+          >
+            <Ionicons
+              name="close"
+              size={moderateScale(16)}
+              color={colors.text.primary}
+            />
           </TouchableOpacity>
-          <Text style={[textVariants.heading4, styles.sheetTitle]}>Enter your service location</Text>
+          <Text style={[textVariants.heading4, styles.sheetTitle]}>
+            Enter your service location
+          </Text>
           <Text style={[textVariants.body2, styles.sheetSubtitle]}>
             This helps us find relevant bookings for you
           </Text>
 
-          <TouchableOpacity style={styles.sheetButtonPrimary} onPress={onAnother} activeOpacity={0.9}>
-            <Text style={[textVariants.button1, styles.sheetButtonText]}>ANOTHER LOCATION</Text>
+          <TouchableOpacity
+            style={styles.sheetButtonPrimary}
+            onPress={onAnother}
+            activeOpacity={0.9}
+          >
+            <Text style={[textVariants.button1, styles.sheetButtonText]}>
+              ANOTHER LOCATION
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.sheetButtonSecondary} onPress={onCurrent} activeOpacity={0.9}>
-            <Ionicons name="location-outline" size={moderateScale(18)} color="#5A0C0C" />
-            <Text style={[textVariants.button2, styles.sheetSecondaryText]}>USE CURRENT LOCATION</Text>
+          <TouchableOpacity
+            style={styles.sheetButtonSecondary}
+            onPress={onCurrent}
+            activeOpacity={0.9}
+          >
+            <Ionicons
+              name="location-outline"
+              size={moderateScale(18)}
+              color="#5A0C0C"
+            />
+            <Text style={[textVariants.button2, styles.sheetSecondaryText]}>
+              USE CURRENT LOCATION
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.sheetIllustrationWrap}>
             <View style={styles.sheetIllustrationBg} />
             <Image
-              source={require('../../assets/images/Vector.png')}
+              source={require("../../assets/images/Vector.png")}
               style={styles.sheetIllustrationImage}
               resizeMode="contain"
             />
@@ -437,7 +666,7 @@ const styles = ScaledSheet.create({
   },
   input: {
     borderWidth: scale(1),
-    borderColor: '#7A201A',
+    borderColor: "#7A201A",
     borderRadius: moderateScale(10),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(12),
@@ -447,31 +676,34 @@ const styles = ScaledSheet.create({
   },
   dropdown: {
     borderWidth: scale(1),
-    borderColor: '#7A201A',
+    borderColor: "#7A201A",
     borderRadius: moderateScale(10),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: colors.neutral.white,
   },
   dropdownValue: {
     color: colors.text.primary,
   },
   placeholder: {
-    color: '#7A201A',
+    color: "#7A201A",
   },
   uploadRow: {
     borderWidth: scale(1),
-    borderColor: '#7A201A',
+    borderColor: "#7A201A",
     borderRadius: moderateScale(10),
     paddingHorizontal: scale(14),
     paddingVertical: verticalScale(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: colors.neutral.white,
+  },
+  uploadRowError: {
+    borderColor: "#C62828",
   },
   uploadedText: {
     color: colors.text.primary,
@@ -480,20 +712,23 @@ const styles = ScaledSheet.create({
     width: moderateScale(26),
     height: moderateScale(26),
     borderRadius: moderateScale(13),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: scale(1),
   },
   circleNeutral: {
-    borderColor: '#5A0C0C',
+    borderColor: "#5A0C0C",
+  },
+  circleError: {
+    borderColor: "#C62828",
   },
   circleSuccess: {
     backgroundColor: colors.secondary.green,
     borderColor: colors.secondary.green,
   },
   checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: scale(10),
     marginTop: verticalScale(6),
   },
@@ -502,48 +737,48 @@ const styles = ScaledSheet.create({
     height: moderateScale(18),
     borderRadius: moderateScale(4),
     borderWidth: scale(1),
-    borderColor: '#7A201A',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#7A201A",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.background.base,
   },
   checkboxChecked: {
-    backgroundColor: '#7A201A',
+    backgroundColor: "#7A201A",
   },
   checkboxText: {
     color: colors.text.primary,
   },
   link: {
-    color: '#0D63C7',
-    fontFamily: 'Inter_600SemiBold',
+    color: "#0D63C7",
+    fontFamily: "Inter_600SemiBold",
   },
   button: {
     height: verticalScale(56),
     borderRadius: moderateScale(28),
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonPrimary: {
-    backgroundColor: '#5A0C0C',
+    backgroundColor: "#5A0C0C",
   },
   buttonDisabled: {
-    backgroundColor: '#DADADA',
+    backgroundColor: "#DADADA",
   },
   buttonText: {
     color: colors.text.inverse,
   },
   buttonDisabledText: {
-    color: '#9EA3A9',
+    color: "#9EA3A9",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0,0,0,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: scale(20),
   },
   modalCard: {
-    width: '100%',
+    width: "100%",
     backgroundColor: colors.neutral.white,
     borderRadius: moderateScale(14),
     padding: scale(16),
@@ -559,15 +794,15 @@ const styles = ScaledSheet.create({
     color: colors.text.primary,
   },
   modalClose: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
   },
   modalCloseText: {
-    color: '#0D63C7',
+    color: "#0D63C7",
   },
   sheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
   },
   sheetBackdrop: {
     flex: 1,
@@ -579,7 +814,7 @@ const styles = ScaledSheet.create({
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(20),
     paddingBottom: verticalScale(28),
-    alignItems: 'center',
+    alignItems: "center",
     gap: verticalScale(10),
   },
   sheetClose: {
@@ -587,12 +822,12 @@ const styles = ScaledSheet.create({
     height: moderateScale(30),
     borderRadius: moderateScale(15),
     borderWidth: scale(1),
-    borderColor: '#D6D6D6',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#D6D6D6",
+    alignItems: "center",
+    justifyContent: "center",
   },
   sheetTitle: {
-    color: '#5A0C0C',
+    color: "#5A0C0C",
   },
   sheetSubtitle: {
     color: colors.text.primary,
@@ -601,11 +836,11 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(10),
     height: verticalScale(48),
     borderRadius: moderateScale(24),
-    backgroundColor: '#5A0C0C',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#5A0C0C",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: scale(18),
-    width: '100%',
+    width: "100%",
   },
   sheetButtonText: {
     color: colors.text.inverse,
@@ -615,33 +850,33 @@ const styles = ScaledSheet.create({
     height: verticalScale(48),
     borderRadius: moderateScale(24),
     borderWidth: scale(1),
-    borderColor: '#5A0C0C',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#5A0C0C",
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: scale(18),
-    width: '100%',
-    flexDirection: 'row',
+    width: "100%",
+    flexDirection: "row",
     gap: scale(8),
   },
   sheetSecondaryText: {
-    color: '#5A0C0C',
+    color: "#5A0C0C",
   },
   sheetIllustrationWrap: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginTop: verticalScale(8),
   },
   sheetIllustrationBg: {
-    width: '100%',
+    width: "100%",
     height: verticalScale(70),
     borderTopLeftRadius: moderateScale(30),
     borderTopRightRadius: moderateScale(30),
-    backgroundColor: '#F3DCDC',
+    backgroundColor: "#F3DCDC",
   },
   sheetIllustrationImage: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -verticalScale(6),
-    width: '90%',
+    width: "90%",
     height: verticalScale(90),
   },
 });

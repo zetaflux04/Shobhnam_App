@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 import api from '../../lib/api';
+import { getNetworkErrorMessage } from '../../config/api';
 import { colors, textVariants } from '../../styles/theme';
 
 export default function ArtistPhoneScreen() {
@@ -34,7 +35,7 @@ export default function ArtistPhoneScreen() {
     } catch (err) {
       const isNetworkError = !err.response && (err.message === 'Network Error' || err.code === 'ERR_NETWORK');
       const msg = isNetworkError
-        ? "Cannot reach server. Check that the backend is running and EXPO_PUBLIC_API_URL is set to your computer's IP (e.g. http://192.168.1.x:5000)."
+        ? getNetworkErrorMessage()
         : (err.response?.data?.message ?? err.message ?? 'Failed to send OTP');
       Alert.alert('Error', msg);
     } finally {

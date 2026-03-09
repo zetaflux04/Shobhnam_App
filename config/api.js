@@ -18,3 +18,15 @@ const getApiBaseUrl = () => {
 };
 
 export const API_BASE_URL = getApiBaseUrl();
+
+/**
+ * Production-aware network error message.
+ * - Production (HTTPS): generic connectivity message
+ * - Local dev (HTTP): IP, Wi-Fi, backend running hints
+ */
+export const getNetworkErrorMessage = () => {
+  if (API_BASE_URL.startsWith('https://')) {
+    return 'Cannot reach server. Check your internet connection and try again. If the problem persists, the server may be temporarily unavailable.';
+  }
+  return `Cannot reach server at ${API_BASE_URL}. Check: (1) Backend is running in Shobhnam_Backend, (2) EXPO_PUBLIC_API_URL in .env matches your computer's IP, (3) Phone and computer on same Wi-Fi.`;
+};
