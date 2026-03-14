@@ -5,10 +5,8 @@ import { ScaledSheet, scale, verticalScale } from "react-native-size-matters";
 import { KeyboardVisibleContext } from "../context/KeyboardContext";
 import LoginBrandHeader from "./LoginBrandHeader";
 
-/**
- * Two-part layout: upper 50% for branding (centered), lower 50% for form content (centered).
- * When keyboard opens: logo shrinks, top section compacts, so full form (including submit) fits above keyboard.
- */
+const LAYOUT_ANIMATION_CONFIG = LayoutAnimation.create(250, "easeInEaseOut", "opacity");
+
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -18,7 +16,7 @@ export default function LoginScreenLayout({ children }) {
 
   useEffect(() => {
     const animateAndSet = (visible) => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      LayoutAnimation.configureNext(LAYOUT_ANIMATION_CONFIG);
       setKeyboardVisible(visible);
     };
     const showSub = Keyboard.addListener("keyboardDidShow", () => animateAndSet(true));
@@ -33,7 +31,7 @@ export default function LoginScreenLayout({ children }) {
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.keyboardAvoid}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 24}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 50}
     >
       <View style={styles.container}>
         <View style={[styles.topSection, keyboardVisible && styles.topSectionCompact]}>
@@ -70,9 +68,11 @@ const styles = ScaledSheet.create({
     alignItems: "center",
   },
   topSectionCompact: {
-    minHeight: verticalScale(120),
-    paddingTop: verticalScale(24),
-    paddingVertical: verticalScale(6),
+    flex: 0,
+    minHeight: verticalScale(100),
+    paddingTop: verticalScale(16),
+    paddingVertical: verticalScale(8),
+    overflow: "hidden",
   },
   scrollView: {
     flex: 1,
@@ -86,6 +86,6 @@ const styles = ScaledSheet.create({
   scrollContentCompact: {
     justifyContent: "flex-start",
     paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(24),
+    paddingBottom: verticalScale(48),
   },
 });

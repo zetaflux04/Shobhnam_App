@@ -49,9 +49,9 @@ export default function PhoneScreen() {
         <View style={styles.contentBlock}>
           <View style={styles.form}>
           <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>Let’s stay connected</Text>
-          <Text style={[textVariants.body1, styles.subtitle]}>Enter your phone number</Text>
+          <Text style={[textVariants.body1, styles.subtitle, keyboardVisible && styles.subtitleCompact]}>Enter your phone number</Text>
 
-          <View style={styles.phoneField}>
+          <View style={[styles.phoneField, keyboardVisible && styles.phoneFieldCompact]}>
             <View style={styles.countrySection}>
               <Text style={[textVariants.body2, styles.countryText]}>IN +91</Text>
             </View>
@@ -69,7 +69,7 @@ export default function PhoneScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.skip}
+          style={[styles.skip, keyboardVisible && styles.skipCompact]}
           onPress={() => router.replace('/(tabs)/service')}
           activeOpacity={0.8}
           disabled={loading}
@@ -79,7 +79,7 @@ export default function PhoneScreen() {
 
         <TouchableOpacity
           activeOpacity={canSubmit && !loading ? 0.9 : 1}
-          style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled]}
+          style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled, keyboardVisible && styles.buttonCompact]}
           onPress={handleSubmit}
           disabled={!canSubmit || loading}
         >
@@ -113,6 +113,9 @@ const styles = ScaledSheet.create({
     color: colors.text.secondary,
     marginTop: verticalScale(8),
   },
+  subtitleCompact: {
+    marginTop: verticalScale(4),
+  },
   phoneField: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -123,6 +126,9 @@ const styles = ScaledSheet.create({
     borderRadius: moderateScale(10),
     overflow: 'hidden',
     backgroundColor: colors.neutral.white,
+  },
+  phoneFieldCompact: {
+    marginTop: verticalScale(12),
   },
   countrySection: {
     paddingHorizontal: scale(16),
@@ -148,6 +154,9 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     marginTop: verticalScale(30),
   },
+  skipCompact: {
+    marginTop: verticalScale(12),
+  },
   skipText: {
     color: colors.brand.link,
     textDecorationLine: 'underline',
@@ -158,6 +167,11 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: verticalScale(24),
+  },
+  buttonCompact: {
+    marginTop: verticalScale(12),
+    height: verticalScale(48),
+    borderRadius: moderateScale(24),
   },
   buttonPrimary: {
     backgroundColor: colors.brand.maroon,

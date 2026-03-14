@@ -115,11 +115,11 @@ export default function OTPScreen() {
         <View style={styles.contentBlock}>
           <View style={styles.form}>
           <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>We’ve sent you a code</Text>
-          <Text style={[textVariants.body1, styles.subtitleText]}>
+          <Text style={[textVariants.body1, styles.subtitleText, keyboardVisible && styles.subtitleTextCompact]}>
             Please enter the code sent on <Text style={styles.link}>{maskedPhone}</Text>
           </Text>
 
-          <View style={styles.otpRow}>
+          <View style={[styles.otpRow, keyboardVisible && styles.otpRowCompact]}>
             {otp.map((digit, idx) => (
               <TextInput
                 key={idx}
@@ -138,7 +138,7 @@ export default function OTPScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.resend}
+            style={[styles.resend, keyboardVisible && styles.resendCompact]}
             onPress={resendOtp}
             activeOpacity={0.8}
             disabled={resendCooldown > 0 || loading}
@@ -157,7 +157,7 @@ export default function OTPScreen() {
 
           <TouchableOpacity
             activeOpacity={canSubmit && !loading ? 0.9 : 1}
-            style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled]}
+            style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled, keyboardVisible && styles.buttonCompact]}
             onPress={handleSubmit}
             disabled={!canSubmit || loading}
           >
@@ -201,6 +201,9 @@ const styles = ScaledSheet.create({
     color: colors.text.secondary,
     marginTop: verticalScale(8),
   },
+  subtitleTextCompact: {
+    marginTop: verticalScale(4),
+  },
   link: {
     color: colors.brand.link,
     fontFamily: 'Inter_600SemiBold',
@@ -212,6 +215,9 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(20),
     alignSelf: 'center',
     maxWidth: '100%',
+  },
+  otpRowCompact: {
+    marginTop: verticalScale(12),
   },
   otpInput: {
     width: moderateScale(40),
@@ -228,6 +234,9 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(16),
     alignSelf: 'center',
   },
+  resendCompact: {
+    marginTop: verticalScale(8),
+  },
   resendDisabled: {
     opacity: 0.6,
   },
@@ -237,6 +246,11 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: verticalScale(24),
+  },
+  buttonCompact: {
+    marginTop: verticalScale(12),
+    height: verticalScale(48),
+    borderRadius: moderateScale(24),
   },
   buttonPrimary: {
     backgroundColor: colors.brand.maroon,

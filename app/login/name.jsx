@@ -28,17 +28,17 @@ export default function NameScreen() {
         <View style={styles.contentBlock}>
           <View style={styles.form}>
             <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>Hello there!</Text>
-            <Text style={[textVariants.body1, styles.subtitle]}>What is your good name?</Text>
+            <Text style={[textVariants.body1, styles.subtitle, keyboardVisible && styles.subtitleCompact]}>What is your good name?</Text>
 
             <TextInput
               placeholder="Shobhit Jakotra"
               placeholderTextColor={colors.placeholder}
-              style={styles.input}
+              style={[styles.input, keyboardVisible && styles.inputCompact]}
               value={name}
               onChangeText={setName}
             />
 
-            <TouchableOpacity style={styles.checkboxRow} onPress={() => setAgreed((prev) => !prev)} activeOpacity={0.8}>
+            <TouchableOpacity style={[styles.checkboxRow, keyboardVisible && styles.checkboxRowCompact]} onPress={() => setAgreed((prev) => !prev)} activeOpacity={0.8}>
               <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
                 {agreed ? <Ionicons name="checkmark" size={moderateScale(keyboardVisible ? 12 : 14)} color={colors.text.inverse} /> : null}
               </View>
@@ -49,7 +49,7 @@ export default function NameScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.skip}
+            style={[styles.skip, keyboardVisible && styles.skipCompact]}
             onPress={() => router.push({ pathname: '/login/phone', params: { name } })}
             activeOpacity={0.8}
           >
@@ -58,7 +58,7 @@ export default function NameScreen() {
 
           <TouchableOpacity
             activeOpacity={canSubmit ? 0.9 : 1}
-            style={[styles.button, canSubmit ? styles.buttonPrimary : styles.buttonDisabled]}
+            style={[styles.button, canSubmit ? styles.buttonPrimary : styles.buttonDisabled, keyboardVisible && styles.buttonCompact]}
             onPress={handleSubmit}
           >
             <Text style={[textVariants.button1, canSubmit ? styles.buttonText : styles.buttonDisabledText]}>SUBMIT</Text>
@@ -87,6 +87,9 @@ const styles = ScaledSheet.create({
     color: colors.text.secondary,
     marginTop: verticalScale(8),
   },
+  subtitleCompact: {
+    marginTop: verticalScale(4),
+  },
   input: {
     height: verticalScale(56),
     borderWidth: scale(1),
@@ -99,11 +102,17 @@ const styles = ScaledSheet.create({
     color: colors.text.primary,
     backgroundColor: colors.neutral.white,
   },
+  inputCompact: {
+    marginTop: verticalScale(12),
+  },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(10),
     marginTop: verticalScale(12),
+  },
+  checkboxRowCompact: {
+    marginTop: verticalScale(8),
   },
   checkbox: {
     width: moderateScale(18),
@@ -131,6 +140,9 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     marginTop: verticalScale(30),
   },
+  skipCompact: {
+    marginTop: verticalScale(12),
+  },
   skipText: {
     color: colors.brand.link,
     textDecorationLine: 'underline',
@@ -141,6 +153,11 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: verticalScale(24),
+  },
+  buttonCompact: {
+    marginTop: verticalScale(12),
+    height: verticalScale(48),
+    borderRadius: moderateScale(24),
   },
   buttonPrimary: {
     backgroundColor: colors.brand.maroon,
