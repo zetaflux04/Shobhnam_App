@@ -110,8 +110,12 @@ export default function PaymentScreen() {
           price: i.price,
           dateTime: i.dateTime,
           date: i.date,
+          slot: i.slot,
+          addressId: i.addressId,
           addressDetail: i.addressDetail,
           addressLabel: i.addressLabel,
+          city: i.city,
+          pinCode: i.pinCode,
         }));
         const orderRes = await api.post('/orders', { items });
         const order = orderRes.data?.data ?? orderRes.data;

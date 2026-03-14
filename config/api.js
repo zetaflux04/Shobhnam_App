@@ -8,9 +8,21 @@ import { Platform } from 'react-native';
  * - Production: set via env or app config
  */
 const getApiBaseUrl = () => {
-  if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  const envApiUrl =
+    typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL
+      ? process.env.EXPO_PUBLIC_API_URL.trim()
+      : '';
+
+  if (envApiUrl) {
+    // Normalize to avoid accidental double slashes in request paths.
+    return envApiUrl.replace(/\/+$/, '');
   }
+
+  if (!__DEV__) {
+    // Fail fast in release builds instead of silently pointing to emulator localhost.
+    return '';
+  }
+
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:5000';
   }
@@ -25,6 +37,10 @@ export const API_BASE_URL = getApiBaseUrl();
  * - Local dev (HTTP): IP, Wi-Fi, backend running hints
  */
 export const getNetworkErrorMessage = () => {
+  if (!API_BASE_URL) {
+    return 'App configuration error: EXPO_PUBLIC_API_URL is missing in this release build. Rebuild with the correct EAS env for this profile.';
+  }
+
   if (API_BASE_URL.startsWith('https://')) {
     return 'Cannot reach server. Check your internet connection and try again. If the problem persists, the server may be temporarily unavailable.';
   }

@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/inter';
 
 import { AuthGate } from '../components/AuthGate';
+import { AddressProvider } from '../context/AddressContext';
 import { AuthProvider } from '../context/AuthContext';
 import { OrderProvider } from '../context/OrderContext';
 import { colors } from '../styles/theme';
@@ -57,12 +58,14 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider value={navigationTheme}>
           <AuthProvider>
-            <OrderProvider>
-              <AuthGate>
-                <StatusBar style="dark" />
-                <Stack screenOptions={{ headerShown: false }} />
-              </AuthGate>
-            </OrderProvider>
+            <AddressProvider>
+              <OrderProvider>
+                <AuthGate>
+                  <StatusBar style="dark" />
+                  <Stack screenOptions={{ headerShown: false }} />
+                </AuthGate>
+              </OrderProvider>
+            </AddressProvider>
           </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>

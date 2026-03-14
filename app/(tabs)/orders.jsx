@@ -180,13 +180,21 @@ export default function OrdersScreen() {
       setSubmitting(true);
       try {
         for (const item of itemsWithArtist) {
+          if (!item.date || !item.slot || !item.addressId) {
+            throw new Error('Date, time slot, and address are required for artist booking.');
+          }
           await api.post('/bookings/request', {
             artistId: item.artistId,
-            date: item.date ?? new Date().toISOString(),
+            date: item.date,
+            slot: item.slot,
             type: item.serviceName ?? 'Bhagwat Katha',
+            addressId: item.addressId,
             address: item.address ?? item.addressDetail,
-            city: item.city ?? 'New Delhi',
-            pinCode: item.pinCode ?? '110001',
+            city: item.city,
+            pinCode: item.pinCode,
+            addressLabel: item.addressLabel,
+            recipientName: item.recipientName,
+            recipientPhone: item.recipientPhone,
           });
         }
         clearSelectedAfterOrder();
@@ -266,6 +274,12 @@ export default function OrdersScreen() {
                   {b.eventDetails?.date
                     ? new Date(b.eventDetails.date).toLocaleDateString()
                     : '—'}
+                </Text>
+                <Text style={[textVariants.body4, styles.bookingDate]}>
+                  {b.eventDetails?.slot ? `Slot: ${b.eventDetails.slot}` : 'Slot: —'}
+                </Text>
+                <Text style={[textVariants.body4, styles.bookingDate]}>
+                  {b.location?.address ? b.location.address : 'Address: —'}
                 </Text>
                 {b.status === 'CONFIRMED' && b.paymentStatus !== 'PAID' && (
                   <TouchableOpacity

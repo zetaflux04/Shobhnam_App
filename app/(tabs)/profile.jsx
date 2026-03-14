@@ -15,8 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, moderateScale, scale, verticalScale } from 'react-native-size-matters';
 
 import { useAuth } from '../../context/AuthContext';
+import { buildAddressLine, useAddresses } from '../../context/AddressContext';
 import api from '../../lib/api';
 import { colors, textVariants } from '../../styles/theme';
+import AddressFormModal from '../../components/address/AddressFormModal';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80';
@@ -24,7 +26,7 @@ const DEFAULT_AVATAR =
 const formatCurrency = (value) => `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
 /**
- * @param {{ icon: string; label: string; showSwitch?: boolean; switchValue?: boolean; onToggle?: () => void }} props
+ * @param {{ icon: string; label: string; showSwitch?: boolean; switchValue?: boolean; onToggle?: () => void; onPress?: () => void }} props
  */
 function SettingRow({
   icon,
@@ -32,9 +34,15 @@ function SettingRow({
   showSwitch,
   switchValue,
   onToggle,
+  onPress,
 }) {
   return (
-    <View style={styles.row}>
+    <TouchableOpacity
+      activeOpacity={showSwitch ? 1 : 0.85}
+      style={styles.row}
+      onPress={showSwitch ? undefined : onPress}
+      disabled={showSwitch}
+    >
       <View style={styles.rowLeft}>
         <View style={styles.rowIcon}>
           <Ionicons name={icon} size={moderateScale(18)} color="#5A0C0C" />
@@ -51,13 +59,14 @@ function SettingRow({
       ) : (
         <Ionicons name="chevron-forward" size={moderateScale(18)} color="#6A6E75" />
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, userType, login, logout } = useAuth();
+  const { addresses, loading: loadingAddresses, addAddress, editAddress, removeAddress } = useAddresses();
   const isArtistAuth = userType === 'artist';
 
   const [darkMode, setDarkMode] = useState(false);
@@ -70,6 +79,23 @@ export default function ProfileScreen() {
   });
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
+  const [bookings, setBookings] = useState([]);
+  const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState(null);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    addressType: 'HOME',
+    saveAs: 'Home',
+    houseFloor: '',
+    towerBlock: '',
+    landmark: '',
+    recipientName: user?.name ?? '',
+    recipientPhone: user?.phone ?? '',
+    city: 'New Delhi',
+    state: 'Delhi',
+    pinCode: '',
+    isDefault: false,
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -94,8 +120,10 @@ export default function ProfileScreen() {
           ordersCompleted: bookings.length,
           totalEarning,
         }));
+        setBookings(bookings);
       } catch {
         setProfile((prev) => ({ ...prev, name: user?.name ?? prev.name }));
+        setBookings([]);
       } finally {
         setLoading(false);
       }
@@ -157,6 +185,7 @@ export default function ProfileScreen() {
   const profileSettings = [
     { icon: 'information-circle-outline', label: 'About us' },
     { icon: 'help-circle-outline', label: 'Get help' },
+    ...(isArtist ? [] : [{ icon: 'location-outline', label: 'Manage address' }]),
     { icon: 'chatbox-ellipses-outline', label: 'Feedback' },
     { icon: 'moon-outline', label: 'Dark mode', switch: true },
     { icon: 'settings-outline', label: 'Account settings' },
@@ -194,6 +223,107 @@ export default function ProfileScreen() {
       }
     }
   }, [profile.hasOtherProfile, isArtist, login, router]);
+
+  const openCreateAddress = () => {
+    setEditingAddressId(null);
+    setAddressForm({
+      addressType: 'HOME',
+      saveAs: 'Home',
+      houseFloor: '',
+      towerBlock: '',
+      landmark: '',
+      recipientName: user?.name ?? '',
+      recipientPhone: user?.phone ?? '',
+      city: 'New Delhi',
+      state: 'Delhi',
+      pinCode: '',
+      isDefault: false,
+    });
+    setAddressModalVisible(true);
+  };
+
+  const openEditAddress = (address) => {
+    setEditingAddressId(address._id);
+    setAddressForm({
+      addressType: address.addressType ?? 'HOME',
+      saveAs: address.saveAs,
+      houseFloor: address.houseFloor,
+      towerBlock: address.towerBlock,
+      landmark: address.landmark,
+      recipientName: address.recipientName,
+      recipientPhone: address.recipientPhone,
+      city: address.city,
+      state: address.state,
+      pinCode: address.pinCode,
+      isDefault: address.isDefault,
+    });
+    setAddressModalVisible(true);
+  };
+
+  const saveAddress = async () => {
+    if (!addressForm.saveAs.trim()) {
+      Alert.alert('Validation', 'Save address as is required.');
+      return;
+    }
+    if (!addressForm.houseFloor.trim()) {
+      Alert.alert('Validation', 'House number / floor is required.');
+      return;
+    }
+    if (!addressForm.recipientName.trim()) {
+      Alert.alert('Validation', 'Your name is required.');
+      return;
+    }
+    if (!addressForm.recipientPhone.trim()) {
+      Alert.alert('Validation', 'Your phone number is required.');
+      return;
+    }
+
+    setSavingAddress(true);
+    try {
+      const payload = {
+        ...addressForm,
+        addressType: addressForm.addressType,
+        saveAs: addressForm.saveAs.trim(),
+        houseFloor: addressForm.houseFloor.trim(),
+        towerBlock: addressForm.towerBlock.trim(),
+        landmark: addressForm.landmark.trim(),
+        recipientName: addressForm.recipientName.trim(),
+        recipientPhone: addressForm.recipientPhone.trim(),
+        city: addressForm.city.trim() || 'New Delhi',
+        state: addressForm.state.trim() || 'Delhi',
+        pinCode: addressForm.pinCode.trim(),
+      };
+      if (editingAddressId) {
+        await editAddress(editingAddressId, payload);
+      } else {
+        await addAddress(payload);
+      }
+      setAddressModalVisible(false);
+    } catch (err) {
+      const msg = err.response?.data?.message ?? err.message ?? 'Failed to save address';
+      Alert.alert('Error', msg);
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const confirmDeleteAddress = (addressId) => {
+    Alert.alert('Delete Address?', 'This action cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await removeAddress(addressId);
+          } catch (err) {
+            const msg = err.response?.data?.message ?? err.message ?? 'Failed to delete address';
+            Alert.alert('Error', msg);
+          }
+        },
+      },
+    ]);
+  };
 
   if (loading) {
     return (
@@ -278,12 +408,94 @@ export default function ProfileScreen() {
                   showSwitch={item.switch}
                   switchValue={item.switch ? darkMode : undefined}
                   onToggle={item.switch ? () => setDarkMode((prev) => !prev) : undefined}
+                  onPress={item.label === 'Manage address' ? openCreateAddress : undefined}
                 />
                 {idx !== profileSettings.length - 1 && <View style={styles.divider} />}
               </View>
             ))}
           </View>
         </View>
+
+        {!isArtist && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[textVariants.heading4, styles.sectionTitle]}>Manage address</Text>
+              <TouchableOpacity activeOpacity={0.85} onPress={openCreateAddress}>
+                <Text style={[textVariants.body3, styles.manageAddressAdd]}>+ Add new</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.card}>
+              {loadingAddresses ? (
+                <ActivityIndicator size="small" color="#5A0C0C" style={styles.addressLoader} />
+              ) : null}
+              {!loadingAddresses && addresses.length === 0 ? (
+                <Text style={[textVariants.body3, styles.emptyAddressText]}>No saved addresses yet.</Text>
+              ) : null}
+              {addresses.map((address, idx) => (
+                <View key={address._id}>
+                  <View style={styles.addressItem}>
+                    <View style={styles.addressItemTop}>
+                      <Text style={[textVariants.heading5, styles.addressTag]}>{address.saveAs}</Text>
+                      <View style={styles.addressActions}>
+                        <TouchableOpacity activeOpacity={0.85} onPress={() => openEditAddress(address)}>
+                          <Ionicons name="create-outline" size={moderateScale(18)} color="#0C7BDE" />
+                        </TouchableOpacity>
+                        <TouchableOpacity activeOpacity={0.85} onPress={() => confirmDeleteAddress(address._id)}>
+                          <Ionicons name="trash-outline" size={moderateScale(18)} color="#D62939" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    <Text style={[textVariants.body3, styles.addressLine]}>{buildAddressLine(address)}</Text>
+                    <Text style={[textVariants.body4, styles.addressLine]}>
+                      {address.recipientName} • {address.recipientPhone}
+                    </Text>
+                  </View>
+                  {idx !== addresses.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {isArtist && (
+          <>
+            <View style={styles.section}>
+              <Text style={[textVariants.heading4, styles.sectionTitle]}>Artist address</Text>
+              <View style={styles.card}>
+                <Text style={[textVariants.body3, styles.readOnlyAddress]}>
+                  {user?.serviceLocation ?? 'Address not provided'}
+                </Text>
+                <Text style={[textVariants.body5, styles.readOnlyNote]}>Read only</Text>
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={[textVariants.heading4, styles.sectionTitle]}>Customer addresses</Text>
+              <View style={styles.card}>
+                {bookings.length === 0 ? (
+                  <Text style={[textVariants.body3, styles.emptyAddressText]}>No customer bookings yet.</Text>
+                ) : (
+                  bookings.slice(0, 5).map((booking, idx) => (
+                    <View key={booking._id}>
+                      <Text style={[textVariants.heading5, styles.addressTag]}>
+                        {booking.user?.name ?? 'Customer'}
+                      </Text>
+                      <Text style={[textVariants.body3, styles.addressLine]}>
+                        {booking.location?.address ?? 'Address unavailable'}
+                      </Text>
+                      <Text style={[textVariants.body4, styles.addressLine]}>
+                        {booking.eventDetails?.date
+                          ? `${new Date(booking.eventDetails.date).toLocaleDateString()} • ${booking.eventDetails?.slot ?? '—'}`
+                          : 'Date unavailable'}
+                      </Text>
+                      {idx !== Math.min(bookings.length, 5) - 1 && <View style={styles.divider} />}
+                    </View>
+                  ))
+                )}
+              </View>
+            </View>
+          </>
+        )}
 
         <View style={styles.section}>
           <Text style={[textVariants.heading4, styles.sectionTitle]}>Legal agreements</Text>
@@ -305,6 +517,16 @@ export default function ProfileScreen() {
           Copyright © 2026 Shobhnam Pvt. Ltd. All rights reserved.
         </Text>
       </ScrollView>
+
+      <AddressFormModal
+        visible={addressModalVisible}
+        onClose={() => setAddressModalVisible(false)}
+        title={editingAddressId ? 'Edit address' : 'Add address'}
+        value={addressForm}
+        onChange={(key, nextValue) => setAddressForm((prev) => ({ ...prev, [key]: nextValue }))}
+        onSubmit={saveAddress}
+        submitting={savingAddress}
+      />
     </SafeAreaView>
   );
 }
@@ -413,6 +635,14 @@ const styles = ScaledSheet.create({
   section: {
     gap: verticalScale(8),
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  manageAddressAdd: {
+    color: '#C42C36',
+  },
   sectionTitle: {
     color: colors.text.primary,
   },
@@ -442,6 +672,40 @@ const styles = ScaledSheet.create({
     height: 1,
     backgroundColor: '#F1EEEE',
   },
+  addressLoader: {
+    marginVertical: verticalScale(12),
+  },
+  emptyAddressText: {
+    color: '#6A6E75',
+    paddingVertical: verticalScale(8),
+  },
+  addressItem: {
+    paddingVertical: verticalScale(8),
+    gap: verticalScale(4),
+  },
+  addressItemTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  addressActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(14),
+  },
+  addressTag: {
+    color: colors.text.primary,
+  },
+  addressLine: {
+    color: '#4F545C',
+  },
+  readOnlyAddress: {
+    color: colors.text.primary,
+  },
+  readOnlyNote: {
+    marginTop: verticalScale(4),
+    color: '#8A8E95',
+  },
   logoutRow: {
     paddingVertical: verticalScale(10),
   },
@@ -456,5 +720,54 @@ const styles = ScaledSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    maxHeight: '82%',
+    backgroundColor: colors.background.base,
+    borderTopLeftRadius: moderateScale(22),
+    borderTopRightRadius: moderateScale(22),
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(14),
+    paddingBottom: verticalScale(20),
+    gap: verticalScale(12),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modalTitle: {
+    color: colors.text.primary,
+  },
+  modalBody: {
+    gap: verticalScale(10),
+    paddingBottom: verticalScale(8),
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D4D4D4',
+    borderRadius: moderateScale(10),
+    paddingHorizontal: scale(12),
+    paddingVertical: verticalScale(11),
+    color: colors.text.primary,
+    backgroundColor: colors.background.surface,
+  },
+  modalSaveButton: {
+    backgroundColor: '#5A0C0C',
+    borderRadius: moderateScale(22),
+    paddingVertical: verticalScale(13),
+    alignItems: 'center',
+  },
+  modalSaveButtonDisabled: {
+    backgroundColor: '#B1B4BB',
+  },
+  modalSaveText: {
+    color: colors.text.inverse,
+    textTransform: 'uppercase',
   },
 });

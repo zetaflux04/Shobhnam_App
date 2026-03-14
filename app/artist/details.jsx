@@ -508,29 +508,33 @@ function UploadField({
     >
       <Text
         style={[
+          styles.uploadLabel,
           textVariants.body2,
           uploaded ? styles.uploadedText : styles.placeholder,
         ]}
         numberOfLines={1}
+        ellipsizeMode="tail"
       >
         {loading ? "Uploading..." : uploaded && displayName ? displayName : label}
       </Text>
-      <View
-        style={[
-          styles.circle,
-          uploaded ? styles.circleSuccess : styles.circleNeutral,
-          error && styles.circleError,
-        ]}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color="#5A0C0C" />
-        ) : (
-          <Ionicons
-            name={uploaded ? "checkmark" : icon}
-            size={moderateScale(uploaded ? 16 : 18)}
-            color={uploaded ? colors.text.inverse : error ? "#C62828" : "#5A0C0C"}
-          />
-        )}
+      <View style={styles.uploadIconWrap}>
+        <View
+          style={[
+            styles.circle,
+            uploaded ? styles.circleSuccess : styles.circleNeutral,
+            error && styles.circleError,
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color="#5A0C0C" />
+          ) : (
+            <Ionicons
+              name={uploaded ? "checkmark" : icon}
+              size={moderateScale(uploaded ? 16 : 18)}
+              color={uploaded ? colors.text.inverse : error ? "#C62828" : "#5A0C0C"}
+            />
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -707,6 +711,14 @@ const styles = ScaledSheet.create({
   },
   uploadedText: {
     color: colors.text.primary,
+  },
+  uploadLabel: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: scale(10),
+  },
+  uploadIconWrap: {
+    flexShrink: 0,
   },
   circle: {
     width: moderateScale(26),

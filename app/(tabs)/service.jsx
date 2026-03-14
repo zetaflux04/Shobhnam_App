@@ -240,54 +240,51 @@ export default function ServiceScreen() {
           </ScrollView>
         )}
 
-        <View style={styles.sectionHeader}>
-          <Text style={[textVariants.heading4, styles.sectionTitle]}>Recent orders</Text>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            style={styles.pillButton}
-            onPress={() => router.push('/(tabs)/orders')}
-          >
-            <Ionicons name="chevron-forward" size={moderateScale(16)} color="#20222C" />
-          </TouchableOpacity>
-        </View>
-        {loadingOrders ? (
-          <View style={styles.artistsLoading}>
-            <ActivityIndicator size="small" color="#5A0C0C" />
-          </View>
-        ) : recentOrders.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowCards}>
-            {recentOrders.map((order, idx) => (
+        {(loadingOrders || recentOrders.length > 0) ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={[textVariants.heading4, styles.sectionTitle]}>Recent orders</Text>
               <TouchableOpacity
-                key={`${order.id}-${idx}`}
-                style={styles.orderCard}
-                activeOpacity={0.9}
+                activeOpacity={0.8}
+                style={styles.pillButton}
                 onPress={() => router.push('/(tabs)/orders')}
               >
-                <View style={styles.orderCardContent}>
-                  <Text style={[textVariants.body1, styles.orderCardTitle]} numberOfLines={1}>
-                    {order.title}
-                  </Text>
-                  {order.artist ? (
-                    <Text style={[textVariants.body3, styles.orderCardArtist]} numberOfLines={1}>
-                      {order.artist}
-                    </Text>
-                  ) : null}
-                  <Text style={[textVariants.body4, styles.orderCardDate]}>
-                    {order.date.getTime() > 0 ? order.date.toLocaleDateString() : '—'}
-                  </Text>
-                  <Text style={[textVariants.heading5, styles.orderCardAmount]}>{formatCurrency(order.amount)}</Text>
-                </View>
+                <Ionicons name="chevron-forward" size={moderateScale(16)} color="#20222C" />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <View style={styles.emptyOrders}>
-            <Text style={[textVariants.body3, styles.emptyOrdersText]}>No recent orders</Text>
-            <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/(tabs)/orders')}>
-              <Text style={[textVariants.body4, styles.emptyOrdersLink]}>View orders</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+            </View>
+            {loadingOrders ? (
+              <View style={styles.artistsLoading}>
+                <ActivityIndicator size="small" color="#5A0C0C" />
+              </View>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowCards}>
+                {recentOrders.map((order, idx) => (
+                  <TouchableOpacity
+                    key={`${order.id}-${idx}`}
+                    style={styles.orderCard}
+                    activeOpacity={0.9}
+                    onPress={() => router.push('/(tabs)/orders')}
+                  >
+                    <View style={styles.orderCardContent}>
+                      <Text style={[textVariants.body1, styles.orderCardTitle]} numberOfLines={1}>
+                        {order.title}
+                      </Text>
+                      {order.artist ? (
+                        <Text style={[textVariants.body3, styles.orderCardArtist]} numberOfLines={1}>
+                          {order.artist}
+                        </Text>
+                      ) : null}
+                      <Text style={[textVariants.body4, styles.orderCardDate]}>
+                        {order.date.getTime() > 0 ? order.date.toLocaleDateString() : '—'}
+                      </Text>
+                      <Text style={[textVariants.heading5, styles.orderCardAmount]}>{formatCurrency(order.amount)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </>
+        ) : null}
 
         <View style={styles.footerNoteRow}>
           <Text style={[textVariants.body4, styles.footerNoteLight]}>India&apos;s first</Text>

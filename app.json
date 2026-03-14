@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "shobhnam-app",
-    "slug": "shobhnam-app",
+    "slug": "shobhnam",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/splash.png",
@@ -12,6 +12,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.shobhnam.app",
       "softwareKeyboardLayoutMode": "resize",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
@@ -31,10 +32,11 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash.png",
+          "imageWidth": 260,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#20222C"
+            "backgroundColor": "#ffffff"
           }
         }
       ]
@@ -47,6 +49,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f018674e-c11d-4881-bf0a-c18d65bcbb8c"
+      }
+    },
+    "owner": "zetafluxs-organization"
   }
 }

@@ -9,12 +9,15 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
  * @property {number} price
  * @property {string} dateTime
  * @property {string} [date] - ISO date for API
+ * @property {string} [slot]
  * @property {string} [address]
  * @property {string} [city]
  * @property {string} [pinCode]
- * @property {string} addressId
- * @property {string} addressLabel
- * @property {string} addressDetail
+ * @property {string} [recipientName]
+ * @property {string} [recipientPhone]
+ * @property {string} [addressId]
+ * @property {string} [addressLabel]
+ * @property {string} [addressDetail]
  * @property {string[]} gradient
  * @property {import('react-native').ImageSourcePropType} [image]
  */
