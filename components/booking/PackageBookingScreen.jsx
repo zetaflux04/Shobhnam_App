@@ -79,7 +79,7 @@ export default function PackageBookingScreen({
   const router = useRouter();
   const params = useLocalSearchParams();
   const { addToBag } = useOrder();
-  const { addresses, loading, addAddress, editAddress } = useAddresses();
+  const { addresses, loading, addAddress } = useAddresses();
 
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -90,7 +90,6 @@ export default function PackageBookingScreen({
   const [selectedAddressId, setSelectedAddressId] = useState(null);
 
   const [formVisible, setFormVisible] = useState(false);
-  const [editingAddressId, setEditingAddressId] = useState(null);
   const [formState, setFormState] = useState(defaultForm);
   const [savingAddress, setSavingAddress] = useState(false);
 
@@ -138,26 +137,7 @@ export default function PackageBookingScreen({
   }, [selectedDate, selectedSlot]);
 
   const openCreateAddress = () => {
-    setEditingAddressId(null);
     setFormState(defaultForm);
-    setFormVisible(true);
-  };
-
-  const openEditAddress = (address) => {
-    setEditingAddressId(address._id);
-    setFormState({
-      addressType: address.addressType ?? 'HOME',
-      saveAs: address.saveAs,
-      houseFloor: address.houseFloor,
-      towerBlock: address.towerBlock,
-      landmark: address.landmark,
-      recipientName: address.recipientName,
-      recipientPhone: address.recipientPhone,
-      city: address.city,
-      state: address.state,
-      pinCode: address.pinCode,
-      isDefault: address.isDefault,
-    });
     setFormVisible(true);
   };
 
@@ -195,9 +175,7 @@ export default function PackageBookingScreen({
         pinCode: formState.pinCode.trim(),
       };
 
-      const saved = editingAddressId
-        ? await editAddress(editingAddressId, payload)
-        : await addAddress(payload);
+      const saved = await addAddress(payload);
 
       setSelectedAddressId(saved?._id ?? null);
       setFormVisible(false);
@@ -311,14 +289,6 @@ export default function PackageBookingScreen({
                 <Text style={[textVariants.body4, styles.addressMeta]}>
                   {selectedAddress.recipientName} • {selectedAddress.recipientPhone}
                 </Text>
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  style={styles.inlineEditButton}
-                  onPress={() => openEditAddress(selectedAddress)}
-                >
-                  <Ionicons name="create-outline" size={moderateScale(14)} color="#0C7BDE" />
-                  <Text style={[textVariants.body4, styles.inlineEditLabel]}>Edit</Text>
-                </TouchableOpacity>
               </View>
             ) : null}
           </>
@@ -418,7 +388,7 @@ export default function PackageBookingScreen({
       <AddressFormModal
         visible={formVisible}
         onClose={() => setFormVisible(false)}
-        title={editingAddressId ? 'Edit address' : 'Add address'}
+        title="Add address"
         value={formState}
         onChange={(key, nextValue) => setFormState((prev) => ({ ...prev, [key]: nextValue }))}
         onSubmit={handleSaveAddress}
@@ -515,16 +485,6 @@ const styles = ScaledSheet.create({
   },
   addressMeta: {
     color: '#6A6E75',
-  },
-  inlineEditButton: {
-    marginTop: verticalScale(2),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scale(4),
-    alignSelf: 'flex-start',
-  },
-  inlineEditLabel: {
-    color: '#0C7BDE',
   },
   monthRow: {
     flexDirection: 'row',

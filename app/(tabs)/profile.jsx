@@ -5,7 +5,9 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   ScrollView,
+  StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
@@ -66,7 +68,7 @@ function SettingRow({
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, userType, login, logout } = useAuth();
-  const { addresses, loading: loadingAddresses, addAddress, editAddress, removeAddress } = useAddresses();
+  const { addresses, loading: loadingAddresses, editAddress, removeAddress } = useAddresses();
   const isArtistAuth = userType === 'artist';
 
   const [darkMode, setDarkMode] = useState(false);
@@ -80,6 +82,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [manageSheetVisible, setManageSheetVisible] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [savingAddress, setSavingAddress] = useState(false);
@@ -224,25 +227,12 @@ export default function ProfileScreen() {
     }
   }, [profile.hasOtherProfile, isArtist, login, router]);
 
-  const openCreateAddress = () => {
-    setEditingAddressId(null);
-    setAddressForm({
-      addressType: 'HOME',
-      saveAs: 'Home',
-      houseFloor: '',
-      towerBlock: '',
-      landmark: '',
-      recipientName: user?.name ?? '',
-      recipientPhone: user?.phone ?? '',
-      city: 'New Delhi',
-      state: 'Delhi',
-      pinCode: '',
-      isDefault: false,
-    });
-    setAddressModalVisible(true);
+  const openManageAddressSheet = () => {
+    setManageSheetVisible(true);
   };
 
   const openEditAddress = (address) => {
+    setManageSheetVisible(false);
     setEditingAddressId(address._id);
     setAddressForm({
       addressType: address.addressType ?? 'HOME',
@@ -293,12 +283,15 @@ export default function ProfileScreen() {
         state: addressForm.state.trim() || 'Delhi',
         pinCode: addressForm.pinCode.trim(),
       };
-      if (editingAddressId) {
-        await editAddress(editingAddressId, payload);
-      } else {
-        await addAddress(payload);
+      if (!editingAddressId) {
+        Alert.alert('Error', 'Please select an address to edit.');
+        return;
       }
+      await editAddress(editingAddressId, payload);
       setAddressModalVisible(false);
+      if (!isArtist) {
+        setManageSheetVisible(true);
+      }
     } catch (err) {
       const msg = err.response?.data?.message ?? err.message ?? 'Failed to save address';
       Alert.alert('Error', msg);
@@ -408,54 +401,13 @@ export default function ProfileScreen() {
                   showSwitch={item.switch}
                   switchValue={item.switch ? darkMode : undefined}
                   onToggle={item.switch ? () => setDarkMode((prev) => !prev) : undefined}
-                  onPress={item.label === 'Manage address' ? openCreateAddress : undefined}
+                  onPress={item.label === 'Manage address' ? openManageAddressSheet : undefined}
                 />
                 {idx !== profileSettings.length - 1 && <View style={styles.divider} />}
               </View>
             ))}
           </View>
         </View>
-
-        {!isArtist && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[textVariants.heading4, styles.sectionTitle]}>Manage address</Text>
-              <TouchableOpacity activeOpacity={0.85} onPress={openCreateAddress}>
-                <Text style={[textVariants.body3, styles.manageAddressAdd]}>+ Add new</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.card}>
-              {loadingAddresses ? (
-                <ActivityIndicator size="small" color="#5A0C0C" style={styles.addressLoader} />
-              ) : null}
-              {!loadingAddresses && addresses.length === 0 ? (
-                <Text style={[textVariants.body3, styles.emptyAddressText]}>No saved addresses yet.</Text>
-              ) : null}
-              {addresses.map((address, idx) => (
-                <View key={address._id}>
-                  <View style={styles.addressItem}>
-                    <View style={styles.addressItemTop}>
-                      <Text style={[textVariants.heading5, styles.addressTag]}>{address.saveAs}</Text>
-                      <View style={styles.addressActions}>
-                        <TouchableOpacity activeOpacity={0.85} onPress={() => openEditAddress(address)}>
-                          <Ionicons name="create-outline" size={moderateScale(18)} color="#0C7BDE" />
-                        </TouchableOpacity>
-                        <TouchableOpacity activeOpacity={0.85} onPress={() => confirmDeleteAddress(address._id)}>
-                          <Ionicons name="trash-outline" size={moderateScale(18)} color="#D62939" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                    <Text style={[textVariants.body3, styles.addressLine]}>{buildAddressLine(address)}</Text>
-                    <Text style={[textVariants.body4, styles.addressLine]}>
-                      {address.recipientName} • {address.recipientPhone}
-                    </Text>
-                  </View>
-                  {idx !== addresses.length - 1 && <View style={styles.divider} />}
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
 
         {isArtist && (
           <>
@@ -527,6 +479,58 @@ export default function ProfileScreen() {
         onSubmit={saveAddress}
         submitting={savingAddress}
       />
+
+      {!isArtist && (
+        <Modal
+          visible={manageSheetVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setManageSheetVisible(false)}
+        >
+          <View style={styles.sheetOverlay}>
+            <TouchableOpacity style={styles.sheetBackdrop} activeOpacity={1} onPress={() => setManageSheetVisible(false)} />
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.closeSheetButton}
+              onPress={() => setManageSheetVisible(false)}
+            >
+              <Ionicons name="close" size={moderateScale(20)} color="#3A3A3A" />
+            </TouchableOpacity>
+            <View style={styles.sheetCard}>
+              <Text style={[textVariants.heading3, styles.sheetTitle]}>Manage address</Text>
+              <View style={styles.divider} />
+              {loadingAddresses ? (
+                <ActivityIndicator size="small" color="#5A0C0C" style={styles.addressLoader} />
+              ) : null}
+              {!loadingAddresses && addresses.length === 0 ? (
+                <Text style={[textVariants.body3, styles.emptyAddressText]}>
+                  No saved addresses yet. Add from booking screen.
+                </Text>
+              ) : null}
+              {addresses.map((address, idx) => (
+                <View key={address._id}>
+                  <View style={styles.addressItem}>
+                    <View style={styles.addressItemTop}>
+                      <Text style={[textVariants.heading5, styles.addressTag]}>{address.saveAs}</Text>
+                      <View style={styles.addressActions}>
+                        <TouchableOpacity activeOpacity={0.85} onPress={() => openEditAddress(address)}>
+                          <Ionicons name="create-outline" size={moderateScale(18)} color="#0C7BDE" />
+                        </TouchableOpacity>
+                        <TouchableOpacity activeOpacity={0.85} onPress={() => confirmDeleteAddress(address._id)}>
+                          <Ionicons name="trash-outline" size={moderateScale(18)} color="#FF4D5A" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    <Text style={[textVariants.body3, styles.addressLine]}>{buildAddressLine(address)}</Text>
+                    <Text style={[textVariants.body4, styles.addressLine]}>{address.recipientPhone}</Text>
+                  </View>
+                  {idx !== addresses.length - 1 && <View style={styles.divider} />}
+                </View>
+              ))}
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -635,14 +639,6 @@ const styles = ScaledSheet.create({
   section: {
     gap: verticalScale(8),
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  manageAddressAdd: {
-    color: '#C42C36',
-  },
   sectionTitle: {
     color: colors.text.primary,
   },
@@ -720,6 +716,36 @@ const styles = ScaledSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    justifyContent: 'flex-end',
+  },
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  closeSheetButton: {
+    alignSelf: 'center',
+    width: moderateScale(42),
+    height: moderateScale(42),
+    borderRadius: moderateScale(21),
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: verticalScale(10),
+  },
+  sheetCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: moderateScale(24),
+    borderTopRightRadius: moderateScale(24),
+    paddingHorizontal: scale(16),
+    paddingTop: verticalScale(16),
+    paddingBottom: verticalScale(20),
+  },
+  sheetTitle: {
+    color: colors.text.primary,
+    marginBottom: verticalScale(10),
   },
   modalOverlay: {
     flex: 1,
