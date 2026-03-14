@@ -25,6 +25,7 @@ export const colors = {
   },
   text: {
     primary: '#20222C',
+    secondary: '#6B6B6B',
     inverse: '#FDFDFD',
   },
   state: {
@@ -34,10 +35,18 @@ export const colors = {
     error: '#EB5757',
   },
   background: {
-    base: '#FDFDFD',
+    base: '#F5F5F5',
     surface: '#FFFFFF',
     muted: '#E7E1E1',
   },
+  brand: {
+    maroon: '#7A0F12',
+    maroonLight: '#7A0F12',
+    link: '#0D63C7',
+  },
+  placeholder: '#A8A8A8',
+  disabledButton: '#DADADA',
+  disabledButtonText: '#9EA3A9',
 };
 
 // Font families loaded via @expo-google-fonts/inter in app/_layout.tsx
@@ -56,6 +65,8 @@ export const typography = {
   heading4: { fontSize: 16, lineHeight: 24, letterSpacing: 0, fontFamily: fontFamilies.semiBold },
   heading5: { fontSize: 14, lineHeight: 21, letterSpacing: 0, fontFamily: fontFamilies.semiBold },
   heading6: { fontSize: 12, lineHeight: 18, letterSpacing: 0, fontFamily: fontFamilies.semiBold },
+  loginHeading: { fontSize: 35, lineHeight: 42, letterSpacing: 0, fontFamily: fontFamilies.bold },
+  loginHeadingCompact: { fontSize: 28, lineHeight: 32, letterSpacing: 0, fontFamily: fontFamilies.bold },
 
   body1: { fontSize: 14, lineHeight: 24, letterSpacing: 0, fontFamily: fontFamilies.regular },
   body2: { fontSize: 12, lineHeight: 22, letterSpacing: 0, fontFamily: fontFamilies.regular },

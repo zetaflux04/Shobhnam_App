@@ -1,18 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
+import LoginScreenLayout from '../../components/LoginScreenLayout';
 import { useAuth } from '../../context/AuthContext';
+import { useKeyboardVisible } from '../../context/KeyboardContext';
 import api from '../../lib/api';
 import { colors, textVariants } from '../../styles/theme';
 
@@ -22,16 +16,16 @@ const RESEND_COOLDOWN_SEC = 60;
 export default function OTPScreen() {
   const { phone, name } = useLocalSearchParams();
   const { login } = useAuth();
-
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef([]);
+  const keyboardVisible = useKeyboardVisible();
 
   const maskedPhone = useMemo(() => {
     if (!phone) return '******';
     const digits = String(phone).replace(/\D/g, '');
-    const suffix = digits.slice(-4).padStart(4, '*');
+    const suffix = digits.slice(-4);
     return `******${suffix}`;
   }, [phone]);
 
@@ -104,9 +98,9 @@ export default function OTPScreen() {
   if (!hasPhone) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
+        <View style={styles.fallbackContainer}>
           <Text style={[textVariants.body2, styles.title]}>Phone number required</Text>
-          <Text style={[textVariants.body3, styles.subtitle]}>Please enter your phone number first.</Text>
+          <Text style={[textVariants.body3, styles.fallbackSubtitle]}>Please enter your phone number first.</Text>
           <TouchableOpacity style={styles.button} onPress={() => router.back()} activeOpacity={0.9}>
             <Text style={[textVariants.button1, styles.buttonText]}>GO BACK</Text>
           </TouchableOpacity>
@@ -117,15 +111,11 @@ export default function OTPScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.brand}>
-          <Image source={require('../../assets/images/splash.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={[textVariants.heading4, styles.brandName]}>Shobhnam</Text>
-        </View>
-
-        <View style={styles.form}>
-          <Text style={[textVariants.heading1, styles.title]}>We’ve sent you a code</Text>
-          <Text style={[textVariants.body1, styles.subtitle]}>
+      <LoginScreenLayout>
+        <View style={styles.contentBlock}>
+          <View style={styles.form}>
+          <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>We’ve sent you a code</Text>
+          <Text style={[textVariants.body1, styles.subtitleText]}>
             Please enter the code sent on <Text style={styles.link}>{maskedPhone}</Text>
           </Text>
 
@@ -163,21 +153,22 @@ export default function OTPScreen() {
               {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : 'Resend OTP'}
             </Text>
           </TouchableOpacity>
-        </View>
+          </View>
 
-        <TouchableOpacity
-          activeOpacity={canSubmit && !loading ? 0.9 : 1}
-          style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={!canSubmit || loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.text.inverse} />
-          ) : (
-            <Text style={[textVariants.button1, canSubmit ? styles.buttonText : styles.buttonDisabledText]}>DONE</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            activeOpacity={canSubmit && !loading ? 0.9 : 1}
+            style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={!canSubmit || loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.text.inverse} />
+            ) : (
+              <Text style={[textVariants.button1, canSubmit ? styles.buttonText : styles.buttonDisabledText]}>DONE</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </LoginScreenLayout>
     </SafeAreaView>
   );
 }
@@ -187,75 +178,76 @@ const styles = ScaledSheet.create({
     flex: 1,
     backgroundColor: colors.background.base,
   },
-  container: {
+  fallbackContainer: {
     flex: 1,
     paddingHorizontal: scale(20),
     paddingTop: verticalScale(16),
     paddingBottom: verticalScale(24),
+    justifyContent: 'center',
   },
-  brand: {
-    alignItems: 'center',
-    marginBottom: verticalScale(18),
-    gap: verticalScale(6),
+  fallbackSubtitle: {
+    color: colors.text.secondary,
   },
-  logo: {
-    width: moderateScale(80),
-    height: moderateScale(80),
-  },
-  brandName: {
-    color: '#7A201A',
+  contentBlock: {
+    gap: 0,
   },
   form: {
-    gap: verticalScale(12),
+    gap: 0,
   },
   title: {
     color: colors.text.primary,
   },
-  subtitle: {
-    color: colors.text.primary,
+  subtitleText: {
+    color: colors.text.secondary,
+    marginTop: verticalScale(8),
   },
   link: {
-    color: '#0D63C7',
+    color: colors.brand.link,
     fontFamily: 'Inter_600SemiBold',
+    textDecorationLine: 'underline',
   },
   otpRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: verticalScale(8),
+    gap: scale(6),
+    marginTop: verticalScale(20),
+    alignSelf: 'center',
+    maxWidth: '100%',
   },
   otpInput: {
-    width: moderateScale(46),
-    height: verticalScale(54),
+    width: moderateScale(40),
+    height: moderateScale(44),
     borderWidth: scale(1),
-    borderColor: '#7A201A',
-    borderRadius: moderateScale(8),
+    borderColor: '#E0E0E0',
+    borderRadius: moderateScale(6),
     textAlign: 'center',
-    fontSize: moderateScale(18),
+    fontSize: moderateScale(16),
     color: colors.text.primary,
+    backgroundColor: colors.neutral.white,
   },
   resend: {
-    marginTop: verticalScale(6),
+    marginTop: verticalScale(16),
+    alignSelf: 'center',
   },
   resendDisabled: {
     opacity: 0.6,
   },
   button: {
-    marginTop: 'auto',
     height: verticalScale(56),
-    borderRadius: moderateScale(28),
+    borderRadius: moderateScale(30),
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: verticalScale(24),
   },
   buttonPrimary: {
-    backgroundColor: '#5A0C0C',
+    backgroundColor: colors.brand.maroon,
   },
   buttonDisabled: {
-    backgroundColor: '#EAEAEA',
+    backgroundColor: colors.disabledButton,
   },
   buttonText: {
     color: colors.text.inverse,
   },
   buttonDisabledText: {
-    color: '#B3B3B3',
+    color: colors.disabledButtonText,
   },
 });

@@ -1,30 +1,32 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
+import LoginScreenLayout from '../../components/LoginScreenLayout';
 import { useAuth } from '../../context/AuthContext';
+import { useKeyboardVisible } from '../../context/KeyboardContext';
 import api from '../../lib/api';
 import { colors, textVariants } from '../../styles/theme';
 
 const OTP_LENGTH = 6;
+const RESEND_COOLDOWN_SEC = 60;
 
 export default function ArtistOTPScreen() {
-  const { phone } = useLocalSearchParams();
+  const { phone, name } = useLocalSearchParams();
   const { login } = useAuth();
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef([]);
+  const keyboardVisible = useKeyboardVisible();
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const maskedPhone = useMemo(() => {
     if (!phone) return '******';
@@ -53,26 +55,26 @@ export default function ArtistOTPScreen() {
   };
 
   const handleResend = useCallback(async () => {
-    if (!phone) return;
-    setResending(true);
+    if (!phone || resendCooldown > 0) return;
+    setLoading(true);
     try {
       await api.post('/auth/send-otp', { phone });
-      Alert.alert('Success', 'OTP resent successfully');
+      setResendCooldown(RESEND_COOLDOWN_SEC);
     } catch (err) {
       const msg = err.response?.data?.message ?? err.message ?? 'Failed to resend OTP';
       Alert.alert('Error', msg);
     } finally {
-      setResending(false);
+      setLoading(false);
     }
-  }, [phone]);
+  }, [phone, resendCooldown]);
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || !phone) return;
     const otpString = otp.join('');
 
     setLoading(true);
     try {
-      const res = await api.post('/auth/verify-otp/artist', { phone, otp: otpString });
+      const res = await api.post('/auth/verify-otp/artist', { phone, otp: otpString, name: name || undefined });
       const { artist, accessToken } = res.data?.data ?? {};
       if (artist && accessToken) {
         await login(artist, accessToken, 'artist');
@@ -90,26 +92,22 @@ export default function ArtistOTPScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.brand}>
-          <Image source={require('../../assets/images/splash.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={[textVariants.heading4, styles.brandName]}>Shobhnam</Text>
-        </View>
-
-        <View style={styles.form}>
-          <Text style={[textVariants.heading1, styles.title]}>We’ve sent you a code</Text>
-          <Text style={[textVariants.body1, styles.subtitle]}>
+      <LoginScreenLayout>
+        <View style={[styles.contentBlock, keyboardVisible && styles.contentBlockCompact]}>
+          <View style={[styles.form, keyboardVisible && styles.formCompact]}>
+          <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>We’ve sent{'\n'}you a code</Text>
+          <Text style={[keyboardVisible ? textVariants.body2 : textVariants.body1, styles.subtitle]}>
             Please enter the code sent on <Text style={styles.link}>{maskedPhone}</Text>
           </Text>
 
-          <View style={styles.otpRow}>
+          <View style={[styles.otpRow, keyboardVisible && styles.otpRowCompact]}>
             {otp.map((digit, idx) => (
               <TextInput
                 key={idx}
                 ref={(ref) => {
                   if (ref) inputRefs.current[idx] = ref;
                 }}
-                style={styles.otpInput}
+                style={[styles.otpInput, keyboardVisible && styles.otpInputCompact]}
                 keyboardType="number-pad"
                 maxLength={1}
                 value={digit}
@@ -121,30 +119,31 @@ export default function ArtistOTPScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.resend}
+            style={[styles.resend, keyboardVisible && styles.resendCompact]}
             onPress={handleResend}
             activeOpacity={0.8}
-            disabled={resending || !phone}
+            disabled={resendCooldown > 0 || loading}
           >
-            <Text style={[textVariants.body2, styles.link]}>
-              {resending ? 'Sending...' : 'Resend OTP'}
+            <Text style={[textVariants.body2, styles.link, (resendCooldown > 0 || loading) && styles.resendDisabled]}>
+              {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : 'Resend OTP'}
             </Text>
           </TouchableOpacity>
-        </View>
+          </View>
 
-        <TouchableOpacity
-          activeOpacity={canSubmit && !loading ? 0.9 : 1}
-          style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={!canSubmit || loading}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.text.inverse} />
-          ) : (
-            <Text style={[textVariants.button1, canSubmit ? styles.buttonText : styles.buttonDisabledText]}>DONE</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            activeOpacity={canSubmit && !loading ? 0.9 : 1}
+            style={[styles.button, canSubmit && !loading ? styles.buttonPrimary : styles.buttonDisabled, keyboardVisible && styles.buttonCompact]}
+            onPress={handleSubmit}
+            disabled={!canSubmit || loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.text.inverse} />
+            ) : (
+              <Text style={[textVariants.button1, canSubmit ? styles.buttonText : styles.buttonDisabledText]}>DONE</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </LoginScreenLayout>
     </SafeAreaView>
   );
 }
@@ -154,26 +153,17 @@ const styles = ScaledSheet.create({
     flex: 1,
     backgroundColor: colors.background.base,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: scale(20),
-    paddingTop: verticalScale(16),
-    paddingBottom: verticalScale(24),
+  contentBlock: {
+    gap: verticalScale(14),
   },
-  brand: {
-    alignItems: 'center',
-    marginBottom: verticalScale(18),
-    gap: verticalScale(6),
-  },
-  logo: {
-    width: moderateScale(80),
-    height: moderateScale(80),
-  },
-  brandName: {
-    color: '#7A201A',
+  contentBlockCompact: {
+    gap: verticalScale(8),
   },
   form: {
-    gap: verticalScale(12),
+    gap: verticalScale(10),
+  },
+  formCompact: {
+    gap: verticalScale(6),
   },
   title: {
     color: colors.text.primary,
@@ -182,45 +172,62 @@ const styles = ScaledSheet.create({
     color: colors.text.primary,
   },
   link: {
-    color: '#0D63C7',
+    color: colors.brand.link,
     fontFamily: 'Inter_600SemiBold',
+    textDecorationLine: 'underline',
   },
   otpRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: scale(8),
     marginTop: verticalScale(8),
+  },
+  otpRowCompact: {
+    marginTop: verticalScale(4),
   },
   otpInput: {
     flex: 1,
-    height: verticalScale(56),
+    aspectRatio: 1,
+    minWidth: 0,
     borderWidth: scale(1),
-    borderColor: '#7A201A',
+    borderColor: colors.brand.maroonLight,
     borderRadius: moderateScale(8),
     textAlign: 'center',
     fontSize: moderateScale(18),
     color: colors.text.primary,
-    marginHorizontal: scale(4),
+  },
+  otpInputCompact: {
+    fontSize: moderateScale(14),
   },
   resend: {
     marginTop: verticalScale(6),
+    alignSelf: "center",
+  },
+  resendCompact: {
+    marginTop: verticalScale(4),
+  },
+  resendDisabled: {
+    opacity: 0.6,
   },
   button: {
-    marginTop: 'auto',
     height: verticalScale(56),
     borderRadius: moderateScale(28),
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonCompact: {
+    height: verticalScale(44),
+    borderRadius: moderateScale(22),
+  },
   buttonPrimary: {
-    backgroundColor: '#5A0C0C',
+    backgroundColor: colors.brand.maroon,
   },
   buttonDisabled: {
-    backgroundColor: '#EAEAEA',
+    backgroundColor: colors.disabledButton,
   },
   buttonText: {
     color: colors.text.inverse,
   },
   buttonDisabledText: {
-    color: '#B3B3B3',
+    color: colors.disabledButtonText,
   },
 });
