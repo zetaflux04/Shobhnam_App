@@ -25,9 +25,17 @@ export default function NameScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LoginScreenLayout>
-        <View style={styles.contentBlock}>
+        <View style={[styles.contentBlock, keyboardVisible && styles.contentBlockCompact]}>
           <View style={styles.form}>
-            <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>Hello there!</Text>
+            <Text
+              style={[
+                keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading,
+                styles.title,
+                keyboardVisible && styles.titleCompact,
+              ]}
+            >
+              Hello{'\n'}there!
+            </Text>
             <Text style={[keyboardVisible ? textVariants.body2 : textVariants.body1, styles.subtitle, keyboardVisible && styles.subtitleCompact]}>What is your good name?</Text>
 
             <TextInput
@@ -49,14 +57,6 @@ export default function NameScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.skip, keyboardVisible && styles.skipCompact]}
-            onPress={() => router.push({ pathname: '/login/phone', params: { name } })}
-            activeOpacity={0.8}
-          >
-            <Text style={[textVariants.body2, styles.skipText]}>Skip onboarding</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
             activeOpacity={canSubmit ? 0.9 : 1}
             style={[styles.button, canSubmit ? styles.buttonPrimary : styles.buttonDisabled, keyboardVisible && styles.buttonCompact]}
             onPress={handleSubmit}
@@ -76,25 +76,36 @@ const styles = ScaledSheet.create({
   },
   contentBlock: {
     gap: 0,
+    marginTop: verticalScale(-20),
+  },
+  contentBlockCompact: {
+    marginTop: verticalScale(-10),
   },
   form: {
-    gap: 0,
+    gap: 1,
   },
   title: {
     color: colors.text.primary,
+    fontSize: moderateScale(50),
+    lineHeight: verticalScale(45),
+  },
+  titleCompact: {
+    fontSize: moderateScale(25),
+    lineHeight: verticalScale(20),
   },
   subtitle: {
     color: colors.text.secondary,
-    marginTop: verticalScale(8),
+    fontSize: moderateScale(16),
+    marginTop: verticalScale(6),
   },
   subtitleCompact: {
-    marginTop: verticalScale(4),
+    marginTop: verticalScale(2),
   },
   input: {
-    height: verticalScale(56),
+    height: verticalScale(45),
     borderWidth: scale(1),
     borderColor: colors.brand.maroon,
-    borderRadius: moderateScale(10),
+    borderRadius: moderateScale(8),
     paddingHorizontal: scale(16),
     paddingVertical: 0,
     marginTop: verticalScale(20),
@@ -110,6 +121,7 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     gap: scale(10),
     marginTop: verticalScale(12),
+    alignSelf: 'center',
   },
   checkboxRowCompact: {
     marginTop: verticalScale(6),
@@ -132,33 +144,22 @@ const styles = ScaledSheet.create({
     fontSize: moderateScale(12),
   },
   checkboxTextCompact: {
-    fontSize: moderateScale(11),
+    fontSize: moderateScale(10),
   },
   link: {
     color: colors.brand.link,
     fontFamily: 'Inter_600SemiBold',
     textDecorationLine: 'underline',
   },
-  skip: {
-    alignItems: 'center',
-    marginTop: verticalScale(30),
-  },
-  skipCompact: {
-    marginTop: verticalScale(10),
-  },
-  skipText: {
-    color: colors.brand.link,
-    textDecorationLine: 'underline',
-  },
   button: {
-    height: verticalScale(56),
+    height: verticalScale(50),
     borderRadius: moderateScale(30),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(24),
+    marginTop: verticalScale(84),
   },
   buttonCompact: {
-    marginTop: verticalScale(10),
+    marginTop: verticalScale(16),
     height: verticalScale(46),
     borderRadius: moderateScale(23),
   },

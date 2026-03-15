@@ -46,9 +46,17 @@ export default function PhoneScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LoginScreenLayout>
-        <View style={styles.contentBlock}>
+        <View style={[styles.contentBlock, keyboardVisible && styles.contentBlockCompact]}>
           <View style={styles.form}>
-          <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>Let’s stay connected</Text>
+          <Text
+            style={[
+              keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading,
+              styles.title,
+              keyboardVisible && styles.titleCompact,
+            ]}
+          >
+            Let’s stay{'\n'}connected
+          </Text>
           <Text style={[keyboardVisible ? textVariants.body2 : textVariants.body1, styles.subtitle, keyboardVisible && styles.subtitleCompact]}>Enter your phone number</Text>
 
           <View style={[styles.phoneField, keyboardVisible && styles.phoneFieldCompact]}>
@@ -57,25 +65,16 @@ export default function PhoneScreen() {
             </View>
             <View style={styles.divider} />
             <TextInput
-              placeholder="9876 543 210"
+              placeholder="9876543210"
               placeholderTextColor={colors.placeholder}
               style={styles.phoneInput}
               keyboardType="phone-pad"
               value={phone}
               onChangeText={setPhone}
-              maxLength={14}
+              maxLength={10}
             />
           </View>
         </View>
-
-        <TouchableOpacity
-          style={[styles.skip, keyboardVisible && styles.skipCompact]}
-          onPress={() => router.replace('/(tabs)/service')}
-          activeOpacity={0.8}
-          disabled={loading}
-        >
-          <Text style={[textVariants.body2, styles.skipText]}>Skip onboarding</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={canSubmit && !loading ? 0.9 : 1}
@@ -102,16 +101,26 @@ const styles = ScaledSheet.create({
   },
   contentBlock: {
     gap: 0,
+    marginTop: verticalScale(-20),
+  },
+  contentBlockCompact: {
+    marginTop: verticalScale(-10),
   },
   form: {
     gap: 0,
   },
   title: {
     color: colors.text.primary,
+    fontSize: moderateScale(45),
+    lineHeight: verticalScale(40),
+  },
+  titleCompact: {
+    fontSize: moderateScale(35),
+    lineHeight: verticalScale(30),
   },
   subtitle: {
     color: colors.text.secondary,
-    marginTop: verticalScale(8),
+    marginTop: verticalScale(6),
   },
   subtitleCompact: {
     marginTop: verticalScale(4),
@@ -119,7 +128,7 @@ const styles = ScaledSheet.create({
   phoneField: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    height: verticalScale(56),
+    height: verticalScale(45),
     marginTop: verticalScale(20),
     borderWidth: scale(1),
     borderColor: colors.brand.maroon,
@@ -150,26 +159,15 @@ const styles = ScaledSheet.create({
     fontSize: moderateScale(16),
     color: colors.text.primary,
   },
-  skip: {
-    alignItems: 'center',
-    marginTop: verticalScale(30),
-  },
-  skipCompact: {
-    marginTop: verticalScale(10),
-  },
-  skipText: {
-    color: colors.brand.link,
-    textDecorationLine: 'underline',
-  },
   button: {
-    height: verticalScale(56),
+    height: verticalScale(50),
     borderRadius: moderateScale(30),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(24),
+    marginTop: verticalScale(84),
   },
   buttonCompact: {
-    marginTop: verticalScale(10),
+    marginTop: verticalScale(16),
     height: verticalScale(46),
     borderRadius: moderateScale(23),
   },

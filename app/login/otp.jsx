@@ -122,9 +122,17 @@ export default function OTPScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <LoginScreenLayout>
-        <View style={styles.contentBlock}>
+        <View style={[styles.contentBlock, keyboardVisible && styles.contentBlockCompact]}>
           <View style={styles.form}>
-          <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>We’ve sent you a code</Text>
+          <Text
+            style={[
+              keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading,
+              styles.title,
+              keyboardVisible && styles.titleCompact,
+            ]}
+          >
+            We’ve sent{'\n'}you a code
+          </Text>
           <Text style={[keyboardVisible ? textVariants.body2 : textVariants.body1, styles.subtitleText, keyboardVisible && styles.subtitleTextCompact]}>
             Please enter the code sent on <Text style={styles.link}>{maskedPhone}</Text>
           </Text>
@@ -155,7 +163,7 @@ export default function OTPScreen() {
             <Text
               style={[
                 textVariants.body2,
-                styles.link,
+                styles.resendText,
                 (resendCooldown > 0 || loading) && styles.resendDisabled,
               ]}
             >
@@ -199,16 +207,26 @@ const styles = ScaledSheet.create({
   },
   contentBlock: {
     gap: 0,
+    marginTop: verticalScale(-20),
+  },
+  contentBlockCompact: {
+    marginTop: verticalScale(-10),
   },
   form: {
     gap: 0,
   },
   title: {
     color: colors.text.primary,
+    fontSize: moderateScale(50),
+    lineHeight: verticalScale(45),
+  },
+  titleCompact: {
+    fontSize: moderateScale(25),
+    lineHeight: verticalScale(20),
   },
   subtitleText: {
     color: colors.text.secondary,
-    marginTop: verticalScale(8),
+    marginTop: verticalScale(6),
   },
   subtitleTextCompact: {
     marginTop: verticalScale(4),
@@ -220,20 +238,20 @@ const styles = ScaledSheet.create({
   },
   otpRow: {
     flexDirection: 'row',
-    gap: scale(6),
+    gap: scale(8),
     marginTop: verticalScale(20),
-    alignSelf: 'center',
+    alignSelf: 'start',
     maxWidth: '100%',
   },
   otpRowCompact: {
     marginTop: verticalScale(10),
   },
   otpInput: {
-    width: moderateScale(40),
-    height: moderateScale(44),
+    width: moderateScale(46),
+    height: moderateScale(46),
     borderWidth: scale(1),
-    borderColor: '#E0E0E0',
-    borderRadius: moderateScale(6),
+    borderColor: colors.neutral.grey2,
+    borderRadius: moderateScale(8),
     textAlign: 'center',
     fontSize: moderateScale(16),
     color: colors.text.primary,
@@ -243,6 +261,10 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(16),
     alignSelf: 'center',
   },
+  resendText: {
+    color: colors.brand.link,
+    fontFamily: 'Inter_600SemiBold',
+  },
   resendCompact: {
     marginTop: verticalScale(6),
   },
@@ -250,14 +272,14 @@ const styles = ScaledSheet.create({
     opacity: 0.6,
   },
   button: {
-    height: verticalScale(56),
+    height: verticalScale(50),
     borderRadius: moderateScale(30),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(24),
+    marginTop: verticalScale(84),
   },
   buttonCompact: {
-    marginTop: verticalScale(10),
+    marginTop: verticalScale(16),
     height: verticalScale(46),
     borderRadius: moderateScale(23),
   },

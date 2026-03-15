@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Animated, View } from 'react-native';
 import { ScaledSheet, moderateScale } from 'react-native-size-matters';
 
-const LOGO_SIZE_DEFAULT = moderateScale(200);
-const LOGO_SIZE_COMPACT = moderateScale(150);
+const LOGO_SIZE_DEFAULT = moderateScale(228);
+const LOGO_SIZE_COMPACT = moderateScale(175);
 const ANIMATION_DURATION = 250;
 
 export default function LoginBrandHeader({ keyboardVisible = false }) {

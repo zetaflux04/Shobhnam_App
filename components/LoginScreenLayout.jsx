@@ -19,9 +19,9 @@ export default function LoginScreenLayout({ children }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.keyboardAvoid}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 50}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
     >
       <View style={styles.container}>
         <View style={[styles.topSection, keyboardVisible && styles.topSectionCompact]}>
@@ -31,6 +31,7 @@ export default function LoginScreenLayout({ children }) {
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, keyboardVisible && styles.scrollContentCompact]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           <KeyboardVisibleContext.Provider value={keyboardVisible}>
@@ -52,14 +53,14 @@ const styles = ScaledSheet.create({
   },
   topSection: {
     flex: 0.38,
-    minHeight: verticalScale(156),
-    paddingTop: verticalScale(56),
+    minHeight: verticalScale(140),
+    paddingTop: verticalScale(50),
     justifyContent: "flex-start",
     alignItems: "center",
   },
   topSectionCompact: {
     flex: 0.34,
-    minHeight: verticalScale(148),
+    minHeight: verticalScale(130),
     paddingTop: verticalScale(20),
   },
   scrollView: {
@@ -68,8 +69,8 @@ const styles = ScaledSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingTop: verticalScale(28),
-    paddingBottom: verticalScale(24),
+    paddingTop: verticalScale(10),
+    paddingBottom: verticalScale(0),
   },
   scrollContentCompact: {
     justifyContent: "flex-start",
