@@ -20,6 +20,9 @@ import api from '../../lib/api';
 import { colors, textVariants } from '../../styles/theme';
 
 const PLACEHOLDER_ARTIST_IMAGE = require('../../assets/service/artist 1.png');
+const SERVICE_AVATAR_ICON = require('../../assets/service/avatar.png');
+const NOTIFICATION_ICON = require('../../assets/service/notification-bing.png');
+const ARROW_RIGHT_ICON = require('../../assets/service/arrow-right.png');
 
 const serviceCards = [
   {
@@ -154,7 +157,7 @@ export default function ServiceScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.searchRow}>
           <View style={styles.searchBar}>
-            <Ionicons name="flower-outline" size={moderateScale(18)} color="#5A0C0C" />
+            <Image source={SERVICE_AVATAR_ICON} style={styles.searchAvatarIcon} resizeMode="contain" />
             <TextInput
               placeholder="Search for Jagrata..."
               placeholderTextColor="#B1B4BB"
@@ -163,7 +166,7 @@ export default function ServiceScreen() {
             <Ionicons name="search" size={moderateScale(18)} color="#5A0C0C" />
           </View>
           <TouchableOpacity activeOpacity={0.85} style={styles.bellButton}>
-            <Ionicons name="notifications-outline" size={moderateScale(20)} color="#20222C" />
+            <Image source={NOTIFICATION_ICON} style={styles.bellIcon} resizeMode="contain" />
           </TouchableOpacity>
         </View>
 
@@ -216,7 +219,7 @@ export default function ServiceScreen() {
             style={styles.pillButton}
             onPress={() => router.push('/discover')}
           >
-            <Ionicons name="chevron-forward" size={moderateScale(16)} color="#20222C" />
+            <Image source={ARROW_RIGHT_ICON} style={styles.sectionArrow} resizeMode="contain" />
           </TouchableOpacity>
         </View>
         {loadingArtists ? (
@@ -249,7 +252,7 @@ export default function ServiceScreen() {
                 style={styles.pillButton}
                 onPress={() => router.push('/(tabs)/orders')}
               >
-                <Ionicons name="chevron-forward" size={moderateScale(16)} color="#20222C" />
+                <Image source={ARROW_RIGHT_ICON} style={styles.sectionArrow} resizeMode="contain" />
               </TouchableOpacity>
             </View>
             {loadingOrders ? (
@@ -286,10 +289,12 @@ export default function ServiceScreen() {
           </>
         ) : null}
 
-        <View style={styles.footerNoteRow}>
+        <View style={styles.footerNoteWrap}>
           <Text style={[textVariants.body4, styles.footerNoteLight]}>India&apos;s first</Text>
-          <Text style={[textVariants.heading5, styles.footerNoteStrong]}> spiritual artist app </Text>
-          <Ionicons name="flower-outline" size={moderateScale(16)} color="#5A0C0C" />
+          <View style={styles.footerNoteRow}>
+            <Text style={[textVariants.heading2, styles.footerNoteStrong]}>spiritual artist app</Text>
+            <Image source={SERVICE_AVATAR_ICON} style={styles.footerAvatarIcon} resizeMode="contain" />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -305,7 +310,7 @@ const styles = ScaledSheet.create({
     paddingHorizontal: scale(16),
     paddingTop: verticalScale(12),
     paddingBottom: verticalScale(30),
-    gap: verticalScale(14),
+    gap: verticalScale(12),
   },
   searchRow: {
     flexDirection: 'row',
@@ -319,7 +324,7 @@ const styles = ScaledSheet.create({
     backgroundColor: colors.background.surface,
     borderRadius: moderateScale(24),
     paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(10),
+    paddingVertical: verticalScale(5),
     gap: scale(8),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -327,38 +332,37 @@ const styles = ScaledSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
+  searchAvatarIcon: {
+    width: scale(25),
+    height: scale(25),
+  },
   searchInput: {
     flex: 1,
     color: colors.text.primary,
   },
-  bellButton: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: colors.background.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+  bellIcon: {
+    width: moderateScale(25),
+    height: moderateScale(25),
+    tintColor: '#20222C',
   },
   sectionTitle: {
     color: colors.text.primary,
+    fontFamily: 'Inter_700Bold',
+    fontSize: moderateScale(18),
+    lineHeight: moderateScale(24),
   },
   serviceGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    rowGap: verticalScale(10),
+    marginBottom: verticalScale(-2),
   },
   serviceCard: {
-    width: '48%',
-    aspectRatio: 1.55,
-    minHeight: verticalScale(110),
+    width: '48.5%',
+    height: verticalScale(78),
     borderRadius: moderateScale(14),
     overflow: 'hidden',
-    marginBottom: verticalScale(12),
   },
   serviceCardBg: {
     flex: 1,
@@ -373,12 +377,12 @@ const styles = ScaledSheet.create({
   },
   serviceText: {
     position: 'absolute',
-    bottom: verticalScale(10),
+    top: verticalScale(10),
     left: scale(10),
     color: colors.text.inverse,
   },
   mapCardWrapper: {
-    aspectRatio: 2.7,
+    aspectRatio: 2.3,
     minHeight: verticalScale(120),
     borderRadius: moderateScale(16),
     overflow: 'hidden',
@@ -405,14 +409,10 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  pillButton: {
-    width: moderateScale(28),
-    height: moderateScale(28),
-    borderRadius: moderateScale(14),
-    borderWidth: 1,
-    borderColor: '#E3E5E8',
-    alignItems: 'center',
-    justifyContent: 'center',
+  sectionArrow: {
+    width: moderateScale(15),
+    height: moderateScale(15),
+    tintColor: '#20222C',
   },
   rowCards: {
     gap: scale(12),
@@ -428,7 +428,7 @@ const styles = ScaledSheet.create({
   },
   artistImage: {
     width: '100%',
-    height: verticalScale(120),
+    height: verticalScale(100),
   },
   artistName: {
     color: colors.text.primary,
@@ -481,18 +481,31 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  footerNoteWrap: {
+    alignItems: 'start',
+    justifyContent: 'start',
+    marginTop: verticalScale(20),
+    gap: verticalScale(2),
+  },
   footerNoteRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: scale(4),
-    marginTop: verticalScale(6),
+    alignItems: 'start',
+    justifyContent: 'start',
+    gap: scale(6),
   },
   footerNoteLight: {
     color: '#6A6E75',
+    fontSize: moderateScale(18),
+    fontWeight: 'bold',
   },
   footerNoteStrong: {
     color: '#5A0C0C',
+    fontSize: moderateScale(34),
+    fontWeight: 'bold',
+    fontFamily: 'Inter_700Bold',
+  },
+  footerAvatarIcon: {
+    width: moderateScale(32),
+    height: moderateScale(32),
   },
 });
