@@ -1,26 +1,16 @@
 import { useEffect, useState } from "react";
-import { Keyboard, KeyboardAvoidingView, LayoutAnimation, Platform, ScrollView, UIManager, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { ScaledSheet, scale, verticalScale } from "react-native-size-matters";
 
 import { KeyboardVisibleContext } from "../context/KeyboardContext";
 import LoginBrandHeader from "./LoginBrandHeader";
 
-const LAYOUT_ANIMATION_CONFIG = LayoutAnimation.create(250, "easeInEaseOut", "opacity");
-
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
 export default function LoginScreenLayout({ children }) {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
-    const animateAndSet = (visible) => {
-      LayoutAnimation.configureNext(LAYOUT_ANIMATION_CONFIG);
-      setKeyboardVisible(visible);
-    };
-    const showSub = Keyboard.addListener("keyboardDidShow", () => animateAndSet(true));
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => animateAndSet(false));
+    const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
     return () => {
       showSub.remove();
       hideSub.remove();
@@ -29,7 +19,7 @@ export default function LoginScreenLayout({ children }) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={styles.keyboardAvoid}
       keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 50}
     >
@@ -61,18 +51,16 @@ const styles = ScaledSheet.create({
     paddingHorizontal: scale(20),
   },
   topSection: {
-    flex: 0.45,
-    minHeight: verticalScale(180),
-    paddingTop: verticalScale(80),
+    flex: 0.38,
+    minHeight: verticalScale(156),
+    paddingTop: verticalScale(56),
     justifyContent: "flex-start",
     alignItems: "center",
   },
   topSectionCompact: {
-    flex: 0,
-    minHeight: verticalScale(100),
-    paddingTop: verticalScale(16),
-    paddingVertical: verticalScale(8),
-    overflow: "hidden",
+    flex: 0.34,
+    minHeight: verticalScale(148),
+    paddingTop: verticalScale(20),
   },
   scrollView: {
     flex: 1,
@@ -80,12 +68,12 @@ const styles = ScaledSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingTop: verticalScale(40),
+    paddingTop: verticalScale(28),
     paddingBottom: verticalScale(24),
   },
   scrollContentCompact: {
     justifyContent: "flex-start",
-    paddingTop: verticalScale(8),
-    paddingBottom: verticalScale(48),
+    paddingTop: verticalScale(10),
+    paddingBottom: verticalScale(20),
   },
 });

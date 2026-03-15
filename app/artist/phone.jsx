@@ -67,7 +67,7 @@ export default function ArtistPhoneScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.skip}
+          style={[styles.skip, keyboardVisible && styles.skipCompact]}
           onPress={() => router.replace('/')}
           activeOpacity={0.8}
           disabled={loading}
@@ -102,13 +102,13 @@ const styles = ScaledSheet.create({
     gap: verticalScale(14),
   },
   contentBlockCompact: {
-    gap: verticalScale(8),
+    gap: verticalScale(6),
   },
   form: {
     gap: verticalScale(8),
   },
   formCompact: {
-    gap: verticalScale(4),
+    gap: verticalScale(3),
   },
   title: {
     color: colors.text.primary,
@@ -126,7 +126,7 @@ const styles = ScaledSheet.create({
     overflow: 'hidden',
   },
   phoneFieldCompact: {
-    marginTop: verticalScale(4),
+    marginTop: verticalScale(6),
   },
   countrySection: {
     paddingHorizontal: scale(14),
@@ -158,6 +158,10 @@ const styles = ScaledSheet.create({
   },
   skip: {
     alignItems: 'center',
+    marginTop: verticalScale(20),
+  },
+  skipCompact: {
+    marginTop: verticalScale(10),
   },
   skipText: {
     color: colors.brand.link,
@@ -170,8 +174,8 @@ const styles = ScaledSheet.create({
     justifyContent: 'center',
   },
   buttonCompact: {
-    height: verticalScale(44),
-    borderRadius: moderateScale(22),
+    height: verticalScale(46),
+    borderRadius: moderateScale(23),
   },
   buttonPrimary: {
     backgroundColor: colors.brand.maroon,

@@ -49,7 +49,7 @@ export default function PhoneScreen() {
         <View style={styles.contentBlock}>
           <View style={styles.form}>
           <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>Let’s stay connected</Text>
-          <Text style={[textVariants.body1, styles.subtitle, keyboardVisible && styles.subtitleCompact]}>Enter your phone number</Text>
+          <Text style={[keyboardVisible ? textVariants.body2 : textVariants.body1, styles.subtitle, keyboardVisible && styles.subtitleCompact]}>Enter your phone number</Text>
 
           <View style={[styles.phoneField, keyboardVisible && styles.phoneFieldCompact]}>
             <View style={styles.countrySection}>
@@ -128,7 +128,7 @@ const styles = ScaledSheet.create({
     backgroundColor: colors.neutral.white,
   },
   phoneFieldCompact: {
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(10),
   },
   countrySection: {
     paddingHorizontal: scale(16),
@@ -155,7 +155,7 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(30),
   },
   skipCompact: {
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(10),
   },
   skipText: {
     color: colors.brand.link,
@@ -169,9 +169,9 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(24),
   },
   buttonCompact: {
-    marginTop: verticalScale(12),
-    height: verticalScale(48),
-    borderRadius: moderateScale(24),
+    marginTop: verticalScale(10),
+    height: verticalScale(46),
+    borderRadius: moderateScale(23),
   },
   buttonPrimary: {
     backgroundColor: colors.brand.maroon,

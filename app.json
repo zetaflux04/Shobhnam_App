@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "shobhnam-app",
+    "name": "Shobhnam",
     "slug": "shobhnam",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "backgroundColor": "#F76B10",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/splash.png"
       },
       "edgeToEdgeEnabled": true,
@@ -51,6 +51,7 @@
       "reactCompiler": true
     },
     "extra": {
+      "apiUrl": "https://shobhnambackend-production.up.railway.app",
       "router": {},
       "eas": {
         "projectId": "f018674e-c11d-4881-bf0a-c18d65bcbb8c"

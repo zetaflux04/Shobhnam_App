@@ -3,14 +3,29 @@ import { useEffect } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 
-function isPublicRoute(segments) {
-  if (!segments || segments.length === 0) return true;
+const AUTH_PUBLIC_ROOTS = new Set(['index', 'onboarding', 'login']);
+const ARTIST_PREAUTH_ROUTES = new Set(['', 'onboarding', 'phone', 'otp']);
+const AUTHENTICATED_HOME_ROUTE = '/(tabs)/service';
+
+function getRouteAccess(segments) {
+  if (!segments || segments.length === 0) {
+    return { isPublic: true, isAuthEntryRoute: true };
+  }
   const first = segments[0];
-  if (first === 'index' || first === 'onboarding') return true;
-  if (first === 'login') return true;
-  // Artist flow: phone, otp, details, success, address, location-search, location-map - all public during registration
-  if (first === 'artist') return true;
-  return false;
+
+  if (AUTH_PUBLIC_ROOTS.has(first)) {
+    return { isPublic: true, isAuthEntryRoute: true };
+  }
+
+  if (first === 'artist') {
+    const second = segments[1] ?? '';
+    if (ARTIST_PREAUTH_ROUTES.has(second)) {
+      return { isPublic: true, isAuthEntryRoute: true };
+    }
+    return { isPublic: false, isAuthEntryRoute: false };
+  }
+
+  return { isPublic: false, isAuthEntryRoute: false };
 }
 
 export function AuthGate({ children }) {
@@ -21,10 +36,15 @@ export function AuthGate({ children }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const isPublic = isPublicRoute(segments);
+    const { isPublic, isAuthEntryRoute } = getRouteAccess(segments);
 
     if (!isAuthenticated && !isPublic) {
       router.replace('/login/name');
+      return;
+    }
+
+    if (isAuthenticated && isAuthEntryRoute) {
+      router.replace(AUTHENTICATED_HOME_ROUTE);
     }
   }, [isAuthenticated, isLoading, segments, router]);
 

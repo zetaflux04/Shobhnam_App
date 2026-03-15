@@ -28,7 +28,7 @@ export default function NameScreen() {
         <View style={styles.contentBlock}>
           <View style={styles.form}>
             <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>Hello there!</Text>
-            <Text style={[textVariants.body1, styles.subtitle, keyboardVisible && styles.subtitleCompact]}>What is your good name?</Text>
+            <Text style={[keyboardVisible ? textVariants.body2 : textVariants.body1, styles.subtitle, keyboardVisible && styles.subtitleCompact]}>What is your good name?</Text>
 
             <TextInput
               placeholder="Shobhit Jakotra"
@@ -42,7 +42,7 @@ export default function NameScreen() {
               <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
                 {agreed ? <Ionicons name="checkmark" size={moderateScale(keyboardVisible ? 12 : 14)} color={colors.text.inverse} /> : null}
               </View>
-              <Text style={[textVariants.body2, styles.checkboxText]}>
+              <Text style={[textVariants.body2, styles.checkboxText, keyboardVisible && styles.checkboxTextCompact]}>
                 I agree with <Text style={styles.link}>Terms & Conditions</Text>
               </Text>
             </TouchableOpacity>
@@ -103,7 +103,7 @@ const styles = ScaledSheet.create({
     backgroundColor: colors.neutral.white,
   },
   inputCompact: {
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(10),
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -112,7 +112,7 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(12),
   },
   checkboxRowCompact: {
-    marginTop: verticalScale(8),
+    marginTop: verticalScale(6),
   },
   checkbox: {
     width: moderateScale(18),
@@ -131,6 +131,9 @@ const styles = ScaledSheet.create({
     color: colors.text.primary,
     fontSize: moderateScale(12),
   },
+  checkboxTextCompact: {
+    fontSize: moderateScale(11),
+  },
   link: {
     color: colors.brand.link,
     fontFamily: 'Inter_600SemiBold',
@@ -141,7 +144,7 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(30),
   },
   skipCompact: {
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(10),
   },
   skipText: {
     color: colors.brand.link,
@@ -155,9 +158,9 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(24),
   },
   buttonCompact: {
-    marginTop: verticalScale(12),
-    height: verticalScale(48),
-    borderRadius: moderateScale(24),
+    marginTop: verticalScale(10),
+    height: verticalScale(46),
+    borderRadius: moderateScale(23),
   },
   buttonPrimary: {
     backgroundColor: colors.brand.maroon,

@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 /**
  * API base URL for backend.
@@ -8,14 +9,20 @@ import { Platform } from 'react-native';
  * - Production: set via env or app config
  */
 const getApiBaseUrl = () => {
+  const configApiUrl =
+    Constants?.expoConfig?.extra?.apiUrl ||
+    Constants?.manifest2?.extra?.expoClient?.extra?.apiUrl ||
+    '';
   const envApiUrl =
     typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_URL
       ? process.env.EXPO_PUBLIC_API_URL.trim()
       : '';
 
-  if (envApiUrl) {
+  const configuredApiUrl = envApiUrl || String(configApiUrl).trim();
+
+  if (configuredApiUrl) {
     // Normalize to avoid accidental double slashes in request paths.
-    return envApiUrl.replace(/\/+$/, '');
+    return configuredApiUrl.replace(/\/+$/, '');
   }
 
   if (!__DEV__) {

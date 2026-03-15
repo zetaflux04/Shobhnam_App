@@ -3,7 +3,7 @@ import { Animated, View } from 'react-native';
 import { ScaledSheet, moderateScale } from 'react-native-size-matters';
 
 const LOGO_SIZE_DEFAULT = moderateScale(200);
-const LOGO_SIZE_COMPACT = moderateScale(72);
+const LOGO_SIZE_COMPACT = moderateScale(150);
 const ANIMATION_DURATION = 250;
 
 export default function LoginBrandHeader({ keyboardVisible = false }) {
@@ -33,9 +33,9 @@ export default function LoginBrandHeader({ keyboardVisible = false }) {
         ]}
       >
         <Animated.Image
-          source={require('../assets/images/Logo mark.png')}
+          source={require('../assets/images/main_logo.png')}
           style={{ width: sizeAnim, height: sizeAnim }}
-          resizeMode="cover"
+          resizeMode="contain"
         />
       </Animated.View>
     </View>

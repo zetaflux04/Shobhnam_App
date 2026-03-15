@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, InteractionManager, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
@@ -37,6 +37,16 @@ export default function OTPScreen() {
     const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [resendCooldown]);
+
+  useEffect(() => {
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      inputRefs.current[0]?.focus();
+    });
+
+    return () => {
+      interaction.cancel?.();
+    };
+  }, []);
 
   const resendOtp = useCallback(async () => {
     if (!phone || resendCooldown > 0) return;
@@ -115,7 +125,7 @@ export default function OTPScreen() {
         <View style={styles.contentBlock}>
           <View style={styles.form}>
           <Text style={[keyboardVisible ? textVariants.loginHeadingCompact : textVariants.loginHeading, styles.title]}>We’ve sent you a code</Text>
-          <Text style={[textVariants.body1, styles.subtitleText, keyboardVisible && styles.subtitleTextCompact]}>
+          <Text style={[keyboardVisible ? textVariants.body2 : textVariants.body1, styles.subtitleText, keyboardVisible && styles.subtitleTextCompact]}>
             Please enter the code sent on <Text style={styles.link}>{maskedPhone}</Text>
           </Text>
 
@@ -132,7 +142,6 @@ export default function OTPScreen() {
                 value={digit}
                 onChangeText={(val) => updateDigit(val, idx)}
                 onKeyPress={(e) => handleKeyPress(e, idx)}
-                autoFocus={idx === 0}
               />
             ))}
           </View>
@@ -217,7 +226,7 @@ const styles = ScaledSheet.create({
     maxWidth: '100%',
   },
   otpRowCompact: {
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(10),
   },
   otpInput: {
     width: moderateScale(40),
@@ -235,7 +244,7 @@ const styles = ScaledSheet.create({
     alignSelf: 'center',
   },
   resendCompact: {
-    marginTop: verticalScale(8),
+    marginTop: verticalScale(6),
   },
   resendDisabled: {
     opacity: 0.6,
@@ -248,9 +257,9 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(24),
   },
   buttonCompact: {
-    marginTop: verticalScale(12),
-    height: verticalScale(48),
-    borderRadius: moderateScale(24),
+    marginTop: verticalScale(10),
+    height: verticalScale(46),
+    borderRadius: moderateScale(23),
   },
   buttonPrimary: {
     backgroundColor: colors.brand.maroon,

@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, InteractionManager, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScaledSheet, scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
@@ -27,6 +27,16 @@ export default function ArtistOTPScreen() {
     const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [resendCooldown]);
+
+  useEffect(() => {
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      inputRefs.current[0]?.focus();
+    });
+
+    return () => {
+      interaction.cancel?.();
+    };
+  }, []);
 
   const maskedPhone = useMemo(() => {
     if (!phone) return '******';
@@ -113,7 +123,6 @@ export default function ArtistOTPScreen() {
                 value={digit}
                 onChangeText={(val) => updateDigit(val, idx)}
                 onKeyPress={(e) => handleKeyPress(e, idx)}
-                autoFocus={idx === 0}
               />
             ))}
           </View>
@@ -157,13 +166,13 @@ const styles = ScaledSheet.create({
     gap: verticalScale(14),
   },
   contentBlockCompact: {
-    gap: verticalScale(8),
+    gap: verticalScale(6),
   },
   form: {
     gap: verticalScale(10),
   },
   formCompact: {
-    gap: verticalScale(6),
+    gap: verticalScale(4),
   },
   title: {
     color: colors.text.primary,
@@ -182,7 +191,7 @@ const styles = ScaledSheet.create({
     marginTop: verticalScale(8),
   },
   otpRowCompact: {
-    marginTop: verticalScale(4),
+    marginTop: verticalScale(6),
   },
   otpInput: {
     flex: 1,
@@ -215,8 +224,8 @@ const styles = ScaledSheet.create({
     justifyContent: 'center',
   },
   buttonCompact: {
-    height: verticalScale(44),
-    borderRadius: moderateScale(22),
+    height: verticalScale(46),
+    borderRadius: moderateScale(23),
   },
   buttonPrimary: {
     backgroundColor: colors.brand.maroon,
